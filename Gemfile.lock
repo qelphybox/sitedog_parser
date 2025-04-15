@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sitedog_parser (0.1.1)
+    sitedog_parser (0.2.0)
       thor (~> 1.2)
 
 GEM

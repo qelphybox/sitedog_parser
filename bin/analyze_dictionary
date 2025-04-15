@@ -42,7 +42,7 @@ begin
   end
 
   # Определяем простые поля, которые не должны рассматриваться как сервисы
-  simple_fields = [:project, :role, :environment, :registry, :bought_at]
+  simple_fields = [:project, :role, :environment, :registry]
 
   # Анализируем данные через наш интерфейс Parser
   data = SitedogParser::Parser.parse(sites_data, simple_fields: simple_fields, dictionary_path: dictionary_path)

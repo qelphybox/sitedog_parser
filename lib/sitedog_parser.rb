@@ -41,10 +41,13 @@ module SitedogParser
 
         # Process each service type and its data
         items.each do |service_type, data|
-          # Проверяем, является ли это поле "простым" (не сервисом)
-          if simple_fields.include?(service_type)
-            # Проверяем, оканчивается ли поле на _at и пробуем преобразовать его в DateTime
-            if service_type.to_s.end_with?('_at') && data.is_a?(String)
+          # Проверяем, является ли это поле "простым", имеет суффикс _at, или данные - экземпляр DateTime
+          if simple_fields.include?(service_type) || service_type.to_s.end_with?('_at') || data.is_a?(DateTime)
+            # Если данные уже DateTime, сохраняем как есть
+            if data.is_a?(DateTime)
+              services[service_type] = data
+            # Для полей _at пробуем преобразовать строку в DateTime
+            elsif service_type.to_s.end_with?('_at') && data.is_a?(String)
               begin
                 services[service_type] = DateTime.parse(data)
               rescue Date::Error

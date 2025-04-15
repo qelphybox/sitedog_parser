@@ -61,7 +61,7 @@ You can specify which fields should be treated as simple string values, not as s
 
 ```ruby
 # Define which fields should remain as simple strings (not wrapped in Service objects)
-simple_fields = [:project, :role, :environment, :registry, :bought_at]
+simple_fields = [:project, :role, :environment, :registry]
 
 # Parse with simple fields
 parsed_data = SitedogParser::Parser.parse(yaml_data, simple_fields: simple_fields)

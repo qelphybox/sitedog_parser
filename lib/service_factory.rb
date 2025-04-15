@@ -18,11 +18,13 @@ class ServiceFactory
     slug = nil
     url = nil
     dictionary = Dictionary.new(dictionary_path)
+    dict_entry = nil
 
     case data
     in String if UrlChecker.url_like?(data) # url
       url = UrlChecker.normalize_url(data)
-      slug = dictionary.match(url)&.dig('name')
+      dict_entry = dictionary.match(url)
+      slug = dict_entry&.dig('name')
 
       # If not found in dictionary and service_type exists, use it
       if slug.nil? && service_type
@@ -35,11 +37,14 @@ class ServiceFactory
       puts "url: #{slug} <- #{url}"
     in String if !UrlChecker.url_like?(data) # slug
       slug = data
-      url = dictionary.lookup(slug)&.dig('url')
+      dict_entry = dictionary.lookup(slug)
+      url = dict_entry&.dig('url')
       puts "slug: #{slug} -> #{url}"
     in { service: String => service_slug, url: String => service_url }
       slug = service_slug.to_s.capitalize
       url = service_url
+      # Поиск в словаре после получения slug
+      dict_entry = dictionary.lookup(slug)
       puts "hash: #{slug} + #{url}"
     in Hash
       puts "hash: #{data}"
@@ -57,7 +62,15 @@ class ServiceFactory
         children = []
         data.each do |key, url_value|
           service_name = key.to_s
-          child_service = Service.new(service: service_name.capitalize, url: url_value)
+          # Ищем в словаре по имени и URL
+          child_dict_entry = dictionary.lookup(service_name) || dictionary.match(url_value)
+          child_image_url = child_dict_entry&.dig('image_url')
+
+          child_service = Service.new(
+            service: service_name.capitalize,
+            url: url_value,
+            image_url: child_image_url
+          )
           children << child_service
         end
 
@@ -79,7 +92,15 @@ class ServiceFactory
         url_key = data.key?(:url) ? :url : "url"
         url_value = data[url_key]
 
-        return Service.new(service: service_name.capitalize, url: url_value)
+        # Ищем в словаре
+        service_dict_entry = dictionary.lookup(service_name) || dictionary.match(url_value)
+        service_image_url = service_dict_entry&.dig('image_url')
+
+        return Service.new(
+          service: service_name.capitalize,
+          url: url_value,
+          image_url: service_image_url
+        )
       end
 
       # 3. Process nested hashes
@@ -98,13 +119,28 @@ class ServiceFactory
             url_key = value.key?(:url) ? :url : "url"
             url_value = value[url_key]
 
-            child = Service.new(service: service_name.capitalize, url: url_value)
+            # Ищем в словаре
+            nested_dict_entry = dictionary.lookup(service_name) || dictionary.match(url_value)
+            nested_image_url = nested_dict_entry&.dig('image_url')
+
+            child = Service.new(
+              service: service_name.capitalize,
+              url: url_value,
+              image_url: nested_image_url
+            )
           # 3.2 If value has hash with only URL-like values
           elsif value.values.all? { |v| v.is_a?(String) && UrlChecker.url_like?(v) }
             child_children = []
 
             value.each do |sub_key, url_value|
-              child_children << Service.new(service: sub_key.to_s.capitalize, url: url_value)
+              sub_dict_entry = dictionary.lookup(sub_key.to_s) || dictionary.match(url_value)
+              sub_image_url = sub_dict_entry&.dig('image_url')
+
+              child_children << Service.new(
+                service: sub_key.to_s.capitalize,
+                url: url_value,
+                image_url: sub_image_url
+              )
             end
 
             child = Service.new(service: key.to_s, children: child_children)
@@ -120,7 +156,14 @@ class ServiceFactory
               value.each do |sub_key, sub_value|
                 if sub_value.is_a?(String) && UrlChecker.url_like?(sub_value)
                   has_urls = true
-                  child_children << Service.new(service: sub_key.to_s.capitalize, url: sub_value)
+                  sub_dict_entry = dictionary.lookup(sub_key.to_s) || dictionary.match(sub_value)
+                  sub_image_url = sub_dict_entry&.dig('image_url')
+
+                  child_children << Service.new(
+                    service: sub_key.to_s.capitalize,
+                    url: sub_value,
+                    image_url: sub_image_url
+                  )
                 end
               end
 
@@ -129,7 +172,14 @@ class ServiceFactory
           end
         # 3.4 If the value is a URL string
         elsif value.is_a?(String) && UrlChecker.url_like?(value)
-          child = Service.new(service: key.to_s.capitalize, url: value)
+          url_dict_entry = dictionary.match(value)
+          url_image_url = url_dict_entry&.dig('image_url')
+
+          child = Service.new(
+            service: key.to_s.capitalize,
+            url: value,
+            image_url: url_image_url
+          )
         end
 
         children << child if child
@@ -169,7 +219,11 @@ class ServiceFactory
 
     # Create service with collected data
     if slug
-      Service.new(service: slug, url: url)
+      # Получаем URL изображения из записи словаря, если она есть
+      image_url = dict_entry&.dig('image_url')
+
+      # Создаем сервис со всеми данными сразу
+      Service.new(service: slug, url: url, image_url: image_url)
     else
       nil
     end

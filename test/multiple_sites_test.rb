@@ -145,9 +145,14 @@ class MultipleSitesTest < Minitest::Test
     domain_services = get_domain_services(@parsed_data, 'sitedock.my')
 
     assert_equal 'Namecheap', domain_services[:registrar].first.service
-    # Проверяем, что bought_at это строка, а не сервис
-    assert_equal 'Apr 1, 2025 01:27:35 AM', domain_services[:bought_at]
-    assert_instance_of String, domain_services[:bought_at]
+    # Проверяем, что bought_at это DateTime, а не строка
+    assert_instance_of DateTime, domain_services[:bought_at]
+    assert_equal 2025, domain_services[:bought_at].year
+    assert_equal 4, domain_services[:bought_at].month
+    assert_equal 1, domain_services[:bought_at].day
+    assert_equal 1, domain_services[:bought_at].hour
+    assert_equal 27, domain_services[:bought_at].minute
+    assert_equal 35, domain_services[:bought_at].second
   end
 
   def test_service_counts

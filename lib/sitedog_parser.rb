@@ -1,5 +1,6 @@
 require "sitedog_parser/version"
 require 'yaml'
+require 'date'
 
 require_relative "service"
 require_relative "dictionary"
@@ -42,8 +43,18 @@ module SitedogParser
         items.each do |service_type, data|
           # Проверяем, является ли это поле "простым" (не сервисом)
           if simple_fields.include?(service_type)
-            # Для простых полей просто сохраняем значение без оборачивания в сервис
-            services[service_type] = data
+            # Проверяем, оканчивается ли поле на _at и пробуем преобразовать его в DateTime
+            if service_type.to_s.end_with?('_at') && data.is_a?(String)
+              begin
+                services[service_type] = DateTime.parse(data)
+              rescue Date::Error
+                # Если не удалось преобразовать, оставляем как строку
+                services[service_type] = data
+              end
+            else
+              # Для обычных простых полей просто сохраняем значение
+              services[service_type] = data
+            end
           else
             # Для обычных полей создаем сервис
             service = ServiceFactory.create(data, service_type, dictionary_path)

@@ -56,24 +56,24 @@ class MultipleSitesTest < Minitest::Test
     hosting_services = SitedogParser::Parser.get_services_by_type(@parsed_data, :hosting)
     providers = hosting_services.map(&:service).uniq.sort
 
-    assert_includes providers, 's3'
-    assert_includes providers, 'carrd'
-    assert_includes providers, 'vercel'
-    assert_includes providers, 'tumblr'
-    assert_includes providers, 'replit'
-    assert_includes providers, 'hetzner'
-    assert_includes providers, 'aws'
-    assert_includes providers, 'medium'
+    assert_includes providers, 'Amazon S3'
+    assert_includes providers, 'Carrd'
+    assert_includes providers, 'Vercel'
+    assert_includes providers, 'Tumblr'
+    assert_includes providers, 'Replit'
+    assert_includes providers, 'Hetzner'
+    assert_includes providers, 'Amazon Web Services'
+    assert_includes providers, 'Medium'
   end
 
   def test_rbbr_io_services
     # Проверяем конкретный домен
     domain_services = get_domain_services(@parsed_data, 'rbbr.io')
 
-    assert_equal 'gsuite', domain_services[:mail].first.service
-    assert_equal 'aws', domain_services[:registrar].first.service
-    assert_equal 'aws', domain_services[:dns].first.service
-    assert_equal 's3', domain_services[:hosting].first.service
+    assert_equal 'G Suite', domain_services[:mail].first.service
+    assert_equal 'Amazon Web Services', domain_services[:registrar].first.service
+    assert_equal 'Amazon Web Services', domain_services[:dns].first.service
+    assert_equal 'Amazon S3', domain_services[:hosting].first.service
   end
 
   def test_complex_domain
@@ -82,14 +82,14 @@ class MultipleSitesTest < Minitest::Test
 
     assert_equal 7, domain_services.keys.size
 
-    assert_equal 'aws', domain_services[:registrar].first.service
+    assert_equal 'Amazon Web Services', domain_services[:registrar].first.service
     assert_equal 'https://gitlab.com/nemytchenko/projects/painless-rails/painless-rails-group/painless-rails-site',
                  domain_services[:repo].first.url
-    assert_equal 'ansible', domain_services[:deploy].first.service
-    assert_equal 's3', domain_services[:hosting].first.service
-    assert_equal 'cloudlfare', domain_services[:cdn].first.service
-    assert_equal 'zoho', domain_services[:mail].first.service
-    assert_equal 'terraform', domain_services[:managed_by].first.service
+    assert_equal 'Ansible', domain_services[:deploy].first.service
+    assert_equal 'Amazon S3', domain_services[:hosting].first.service
+    assert_equal 'Cloudflare', domain_services[:cdn].first.service
+    assert_equal 'Zoho Mail', domain_services[:mail].first.service
+    assert_equal 'Terraform', domain_services[:managed_by].first.service
   end
 
   def test_simple_fields
@@ -144,7 +144,7 @@ class MultipleSitesTest < Minitest::Test
     # Проверяем обработку дат и других специальных значений
     domain_services = get_domain_services(@parsed_data, 'sitedock.my')
 
-    assert_equal 'namecheap', domain_services[:registrar].first.service
+    assert_equal 'Namecheap', domain_services[:registrar].first.service
     # Проверяем, что bought_at это строка, а не сервис
     assert_equal 'Apr 1, 2025 01:27:35 AM', domain_services[:bought_at]
     assert_instance_of String, domain_services[:bought_at]

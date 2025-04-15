@@ -59,9 +59,9 @@ class ParserTest < Minitest::Test
     assert_equal 'https://aws.amazon.com', example_services[:hosting].first.url
     assert_equal 'Cloudflare', example_services[:dns].first.service
     assert_equal 'https://cloudflare.com', example_services[:dns].first.url
-    assert_equal 'namecheap', example_services[:registrar].first.service
+    assert_equal 'Namecheap', example_services[:registrar].first.service
     assert_equal 'letsencrypt', example_services[:ssl].first.service
-    assert_equal 'repo', example_services[:repo].first.service  # Actually returns 'repo'
+    assert_equal 'GitHub', example_services[:repo].first.service  # Должен определиться как GitHub
     assert_equal 'https://github.com/example/repo', example_services[:repo].first.url
 
     # Check another-site.org services

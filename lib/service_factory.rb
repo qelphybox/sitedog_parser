@@ -38,6 +38,12 @@ class ServiceFactory
     in String if !UrlChecker.url_like?(data) # slug
       slug = data
       dict_entry = dictionary.lookup(slug)
+
+      # Если нашли запись в словаре, используем её имя
+      if dict_entry && dict_entry['name']
+        slug = dict_entry['name']
+      end
+
       url = dict_entry&.dig('url')
       puts "slug: #{slug} -> #{url}"
     in { service: String => service_slug, url: String => service_url }
@@ -62,12 +68,27 @@ class ServiceFactory
         children = []
         data.each do |key, url_value|
           service_name = key.to_s
-          # Ищем в словаре по имени и URL
-          child_dict_entry = dictionary.lookup(service_name) || dictionary.match(url_value)
+          # Первый приоритет - поиск в словаре по URL
+          child_dict_entry = dictionary.match(url_value)
+
+          if child_dict_entry && child_dict_entry['name']
+            # Если нашли запись в словаре по URL, используем её имя вместо ключа
+            service_name = child_dict_entry['name']
+          else
+            # Если записи в словаре нет по URL, ищем по имени
+            key_dict_entry = dictionary.lookup(service_name)
+            if key_dict_entry && key_dict_entry['name']
+              service_name = key_dict_entry['name']
+            else
+              # Если не нашли в словаре ни по URL, ни по имени, капитализируем исходное имя
+              service_name = service_name.capitalize
+            end
+          end
+
           child_image_url = child_dict_entry&.dig('image_url')
 
           child_service = Service.new(
-            service: service_name.capitalize,
+            service: service_name,
             url: url_value,
             image_url: child_image_url
           )

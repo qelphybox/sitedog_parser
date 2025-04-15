@@ -48,6 +48,13 @@ vercel:
   image_url: https://assets.vercel.com/image/upload/front/favicon/vercel/favicon.svg
 
 github:
+  name: GitHub
+  url: https://github.com
+  aliases: github-com
+  url_pattern: github\.com
+  image_url: https://github.githubassets.com/favicons/favicon.svg
+
+github_pages:
   name: GitHub Pages
   url: https://pages.github.com
   aliases: github-pages,gh-pages

@@ -21,6 +21,9 @@ analyze:
 publish:
 	bundle exec gem push `ls -t pkg/sitedog_parser-*.gem | head -1`
 
+push:
+	git push
+
 up:
 	bundle exec rake bump:patch
 

@@ -1,9 +1,10 @@
-class Service < Data.define(:service, :url)
-  def initialize(service:, url:)
+class Service < Data.define(:service, :url, :children)
+  def initialize(service:, url: nil, children: [])
     raise ArgumentError, "Сервис не может быть пустым" if service.nil? || service.empty?
 
     service => String
     url => String if url
+    children => Array if children
     # type => String if type
 
     super

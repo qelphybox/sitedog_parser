@@ -72,9 +72,28 @@ class ServiceFactoryTest < Minitest::Test
   end
 
   def test_create_from_array
-    # Тест с массивом (пока возвращает nil)
+    # Тест с массивом строк
     service = ServiceFactory.create(["item1", "item2"])
-    assert_nil service
+    assert_nil service  # Без service_type возвращаем nil
+
+    # Тест с массивом строк и service_type
+    service = ServiceFactory.create(["item1", "item2"], :services)
+    refute_nil service
+    assert_equal "services", service.service
+    assert_equal 2, service.children.size
+
+    # Тест с массивом хешей
+    services_array = [
+      { service: "github", url: "https://github.com" },
+      { service: "gitlab", url: "https://gitlab.com" }
+    ]
+    service = ServiceFactory.create(services_array, :repos)
+    refute_nil service
+    assert_equal "repos", service.service
+    assert_equal 2, service.children.size
+    assert_equal "Github", service.children[0].service
+    assert_equal "https://github.com", service.children[0].url
+    assert_equal "Gitlab", service.children[1].service
   end
 
   def test_error_handling

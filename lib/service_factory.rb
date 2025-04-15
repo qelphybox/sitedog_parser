@@ -53,20 +53,61 @@ class ServiceFactory
 
         url_key = data.key?(:url) ? :url : "url"
         url = data[url_key] if data.key?(url_key)
+      else
+        # Проверяем наличие вложенных сервисов
+        children = []
+        direct_url_keys = []
+
+        data.each do |key, value|
+          if value.is_a?(Hash)
+            # Рекурсивно создаем дочерний сервис
+            child_service = create(value, key)
+            children << child_service if child_service
+          elsif value.is_a?(String) && UrlChecker.url_like?(value)
+            # URL как прямое значение ключа - создаем отдельный дочерний сервис
+            child_service = create(value, key)
+            children << child_service if child_service
+            direct_url_keys << key
+          end
+        end
+
+        # Если нашли дочерние сервисы, используем service_type как имя родительского сервиса
+        if children.any?
+          slug = service_type.to_s if service_type
+          return Service.new(service: slug, children: children) if slug
+        end
+
+        # Если все значения - URL, и нет вложенных хешей, создаем сервис из первого URL
+        if direct_url_keys.any? && direct_url_keys.size == data.size
+          first_key = direct_url_keys.first
+          return create(data[first_key], first_key)
+        end
       end
     in Array
       puts "array: #{data}"
-      # Берем первый элемент массива и создаем из него сервис
-      first_service = nil
-      data.each do |item|
-        puts "item: #{item}"
-        first_service = create(item, service_type)
-        break if first_service
+
+      # Создаем сервисы из элементов массива
+      children = data.map { |item| create(item, service_type) }.compact
+
+      # Если есть дочерние сервисы, создаем родительский сервис с ними
+      if children.any? && service_type
+        return Service.new(service: service_type.to_s, children: children)
+      elsif children.size == 1
+        # Если только один дочерний сервис, возвращаем его
+        return children.first
       end
-      return first_service
+
+      # Если нет дочерних сервисов или нет имени для родительского сервиса,
+      # возвращаем nil
+      return nil
     end
 
-    Service.new(service: slug, url: url)
+    # Создаем сервис с собранными данными
+    if slug
+      Service.new(service: slug, url: url)
+    else
+      nil
+    end
   rescue => e
     puts "Error creating service: #{e.message}"
     puts "Data: #{data.inspect}"

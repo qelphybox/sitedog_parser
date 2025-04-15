@@ -3,15 +3,15 @@ require_relative 'url_checker'
 require_relative 'dictionary'
 require_relative 'entities'
 
-# Фабрика для создания объектов Service из разных форматов данных
+# Factory for creating Service objects from different data formats
 class ServiceFactory
-  # Создает объект Service из различных форматов данных
+  # Creates a Service object from various data formats
   #
-  # @param data [String, Hash, Array] данные для создания сервиса
-  # @param service_type [Symbol] тип сервиса (используется как запасной вариант)
-  # @return [Service] созданный объект сервиса
+  # @param data [String, Hash, Array] data for creating service
+  # @param service_type [Symbol] service type (used as fallback)
+  # @return [Service] created service object
   def self.create(data, service_type = nil)
-    # Проверка на nil
+    # Check for nil
     return nil if data.nil?
 
     slug = nil
@@ -22,11 +22,11 @@ class ServiceFactory
       url = UrlChecker.normalize_url(data)
       slug = Dictionary.new.match(url)&.dig('name')
 
-      # Если не нашли в словаре и есть service_type, используем его
+      # If not found in dictionary and service_type exists, use it
       if slug.nil? && service_type
         slug = service_type.to_s
       else
-        # Иначе пытаемся извлечь имя из URL
+        # Otherwise try to extract name from URL
         slug = UrlChecker.extract_name(url) if slug.nil?
       end
 
@@ -42,16 +42,16 @@ class ServiceFactory
     in Hash
       puts "hash: #{data}"
 
-      # Защита от nil значений в ключевых полях
+      # Protection from nil values in key fields
       if (data.key?(:service) || data.key?("service")) &&
          (data[:service].nil? || data["service"].nil?)
         return nil
       end
 
-      # 1. Проверяем, содержит ли хеш только URL-подобные строки (список сервисов)
+      # 1. Check if hash contains only URL-like strings (list of services)
       if data.values.all? { |v| v.is_a?(String) && UrlChecker.url_like?(v) }
         puts "hash with services: #{data.keys.join(', ')}"
-        # Создаем массив дочерних сервисов
+        # Create array of child services
         children = []
         data.each do |key, url_value|
           service_name = key.to_s
@@ -59,16 +59,16 @@ class ServiceFactory
           children << child_service
         end
 
-        # Создаем родительский сервис с дочерними элементами
+        # Create parent service with child elements
         if service_type && children.any?
           return Service.new(service: service_type.to_s, children: children)
         elsif children.size == 1
-          # Если только один сервис и нет service_type, возвращаем его напрямую
+          # If only one service and no service_type, return it directly
           return children.first
         end
       end
 
-      # 2. Если хеш содержит service и url (возможно с доп. полями)
+      # 2. If hash contains service and url (possibly with additional fields)
       if (data.key?(:service) || data.key?("service")) &&
          (data.key?(:url) || data.key?("url"))
         service_key = data.key?(:service) ? :service : "service"
@@ -80,14 +80,14 @@ class ServiceFactory
         return Service.new(service: service_name.capitalize, url: url_value)
       end
 
-      # 3. Обрабатываем вложенные хеши
+      # 3. Process nested hashes
       children = []
 
       data.each do |key, value|
         child = nil
 
         if value.is_a?(Hash)
-          # 3.1 Если в значении есть хеш с service и url
+          # 3.1 If value has a hash with service and url
           if (value.key?(:service) || value.key?("service")) &&
              (value.key?(:url) || value.key?("url"))
             service_key = value.key?(:service) ? :service : "service"
@@ -97,7 +97,7 @@ class ServiceFactory
             url_value = value[url_key]
 
             child = Service.new(service: service_name.capitalize, url: url_value)
-          # 3.2 Если в значении есть хеш только с URL-подобными значениями
+          # 3.2 If value has hash with only URL-like values
           elsif value.values.all? { |v| v.is_a?(String) && UrlChecker.url_like?(v) }
             child_children = []
 
@@ -106,11 +106,11 @@ class ServiceFactory
             end
 
             child = Service.new(service: key.to_s, children: child_children)
-          # 3.3 Рекурсивно обрабатываем другие случаи
+          # 3.3 Recursively process other cases
           else
             child = create(value, key)
 
-            # Если ничего не получилось, создаем пустой сервис с именем ключа
+            # If nothing worked, create an empty service with key name
             if child.nil? && value.is_a?(Hash)
               child_children = []
               has_urls = false
@@ -125,7 +125,7 @@ class ServiceFactory
               child = Service.new(service: key.to_s, children: child_children) if has_urls
             end
           end
-        # 3.4 Если значение - строка URL
+        # 3.4 If the value is a URL string
         elsif value.is_a?(String) && UrlChecker.url_like?(value)
           child = Service.new(service: key.to_s.capitalize, url: value)
         end
@@ -133,39 +133,39 @@ class ServiceFactory
         children << child if child
       end
 
-      # Создаем родительский сервис, если есть дочерние элементы
+      # Create parent service if there are child elements
       if children.any? && service_type
         return Service.new(service: service_type.to_s, children: children)
       elsif children.size == 1 && !service_type
-        # Если только один дочерний элемент и нет service_type, возвращаем его
+        # If only one child element and no service_type, return it
         return children.first
       elsif children.any?
-        # Если есть дочерние элементы, но нет service_type, создаем сервис с неизвестным именем
+        # If there are child elements but no service_type, create a service with unknown name
         return Service.new(service: "Unknown", children: children)
       end
     in Array
       puts "array: #{data}"
 
-      # Создаем сервисы из элементов массива
+      # Create services from array elements
       children = data.map { |item| create(item, service_type) }.compact
 
-      # Если есть дочерние сервисы, создаем родительский сервис с ними
+      # If there are child services, create a parent service with them
       if children.any? && service_type
         return Service.new(service: service_type.to_s, children: children)
       elsif children.size == 1
-        # Если только один дочерний сервис, возвращаем его
+        # If only one child service, return it
         return children.first
       end
 
-      # Если нет дочерних сервисов или нет имени для родительского сервиса,
-      # возвращаем nil
+      # If no child services or no name for parent service,
+      # return nil
       return nil
     else
-      # Обработка значений, которые не соответствуют ни одному из шаблонов
+      # Handle values that don't match any pattern
       return nil
     end
 
-    # Создаем сервис с собранными данными
+    # Create service with collected data
     if slug
       Service.new(service: slug, url: url)
     else

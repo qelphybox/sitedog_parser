@@ -1,8 +1,8 @@
-# История изменений
+# Changelog
 
 ## [0.1.0] - 2023-08-14
 
-- Первая версия гема
-- Базовая функциональность для парсинга YAML в объекты доменов и сервисов
-- Поддержка распознавания сервисов по URL и имени
-- Создание и связывание объектов Domain, Hosting и Service
+- Initial gem release
+- Basic functionality for parsing sitedog YAML format
+- Support for recognizing services by URL and name
+- Creation and linking of Domain, Hosting, and Service objects

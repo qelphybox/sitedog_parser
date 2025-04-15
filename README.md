@@ -1,38 +1,38 @@
 # SitedogParser
 
-Библиотека для парсинга и классификации данных о веб-сервисах, хостинге и доменах из YAML-файлов в структурированные Ruby-объекты.
+A library for parsing and classifying web services, hosting, and domain data from YAML files into structured Ruby objects.
 
-## Установка
+## Installation
 
-Добавьте эту строку в Gemfile вашего приложения:
+Add this line to your application's Gemfile:
 
 ```ruby
 gem 'sitedog_parser'
 ```
 
-Затем выполните:
+Then execute:
 
 ```bash
 $ bundle install
 ```
 
-Или установите самостоятельно:
+Or install it yourself:
 
 ```bash
 $ gem install sitedog_parser
 ```
 
-## Использование
+## Usage
 
-### Базовый пример
+### Basic Example
 ```ruby
 require 'sitedog_parser'
 require 'yaml'
 
-# Загрузка данных из YAML-файла
+# Load data from a YAML file
 yaml = YAML.load_file('data.yml', symbolize_names: true)
 
-# Создание объектов сервисов
+# Create service objects
 services = {}
 yaml.each do |domain, items|
   items.each do |service_type, data|
@@ -41,35 +41,35 @@ yaml.each do |domain, items|
     services[service_type] << service if service
   end
 
-  # Создание доменного объекта
+  # Create domain object
   domain_obj = Domain.new(domain, services[:dns], services[:registrar])
 
-  # Создание объекта хостинга
+  # Create hosting object
   hosting = Hosting.new(services[:hosting], services[:cdn], services[:ssl], services[:repo])
 
-  # Теперь вы можете использовать domain_obj и hosting для дальнейшей обработки
+  # Now you can use domain_obj and hosting for further processing
 end
 ```
 
-### Обработка URL и имён сервисов
+### Processing URLs and Service Names
 
-Библиотека автоматически нормализует URL и определяет имена сервисов:
+The library automatically normalizes URLs and identifies service names:
 
 ```ruby
-# Создание сервиса из URL
+# Create a service from a URL
 service = ServiceFactory.create("https://github.com/username/repo")
 puts service.service  # => "Github"
 puts service.url      # => "https://github.com"
 
-# Создание сервиса из имени
+# Create a service from a name
 service = ServiceFactory.create("GitHub")
 puts service.service  # => "GitHub"
 puts service.url      # => "https://github.com"
 ```
 
-### Обработка сложных структур
+### Processing Complex Structures
 
-Библиотека может обрабатывать вложенные структуры данных:
+The library can handle nested data structures:
 
 ```ruby
 data = {
@@ -86,23 +86,149 @@ puts service.children[0].service   # => "Aws"
 puts service.children[0].url       # => "https://aws.amazon.com"
 ```
 
-## Структуры данных
+### Normalizing Different Data Formats
 
-Библиотека предоставляет следующие основные классы:
+SitedogParser's strength is in normalizing different data formats into a consistent structure. Here are examples showing how various input formats are handled:
 
-- `Service`: Представляет веб-сервис с именем и URL
-- `Domain`: Представляет информацию о домене
-- `Hosting`: Представляет информацию о хостинге сайта
-- `ServiceFactory`: Фабрика для создания объектов сервисов из различных форматов данных
+#### 1. Simple URL string
+```ruby
+# Input
+data = "https://github.com/username/repo"
 
-## Развитие и вклад в проект
+# Output
+service = ServiceFactory.create(data)
+service.service  # => "Github"
+service.url      # => "https://github.com"
+service.children # => []
+```
 
-1. Форкните репозиторий
-2. Создайте ветку для ваших изменений (`git checkout -b my-new-feature`)
-3. Зафиксируйте изменения (`git commit -am 'Добавлена новая функция'`)
-4. Отправьте изменения в ветку (`git push origin my-new-feature`)
-5. Создайте Pull Request
+#### 2. Service name string
+```ruby
+# Input
+data = "GitHub"
 
-## Лицензия
+# Output
+service = ServiceFactory.create(data)
+service.service  # => "GitHub"
+service.url      # => "https://github.com"
+service.children # => []
+```
 
-Этот gem доступен под лицензией MIT. Подробности см. в файле [LICENSE.txt](LICENSE.txt).
+#### 3. Hash with service and URL
+```ruby
+# Input
+data = {
+  service: "Github",
+  url: "https://github.com/username/repo"
+}
+
+# Output
+service = ServiceFactory.create(data)
+service.service  # => "Github"
+service.url      # => "https://github.com/username/repo"
+service.children # => []
+```
+
+#### 4. Nested hash with service types
+```ruby
+# Input
+data = {
+  dns: {
+    service: "route53",
+    url: "https://console.aws.amazon.com/route53"
+  },
+  registrar: {
+    service: "namecheap",
+    url: "https://namecheap.com"
+  }
+}
+
+# Output
+service = ServiceFactory.create(data)
+service.service           # => "Unknown"
+service.children.size     # => 2
+service.children[0].service # => "Route53"
+service.children[0].url     # => "https://console.aws.amazon.com/route53"
+service.children[1].service # => "Namecheap"
+service.children[1].url     # => "https://namecheap.com"
+```
+
+#### 5. Hash with URLs
+```ruby
+# Input
+data = {
+  hosting: "https://aws.amazon.com",
+  cdn: "https://cloudflare.com"
+}
+
+# Output
+service = ServiceFactory.create(data)
+service.service           # => "Unknown"
+service.children.size     # => 2
+service.children[0].service # => "Hosting"
+service.children[0].url     # => "https://aws.amazon.com"
+service.children[1].service # => "Cdn"
+service.children[1].url     # => "https://cloudflare.com"
+```
+
+#### 6. Real-world complex example
+```yaml
+# Input YAML
+rbbr.io:
+  repo: http://github.com/rbbr-io/about
+  hosting: https://console.hetzner.cloud/projects/2406094/servers/62263307/overview
+  managed_by:
+    service: easypanel
+    url: https://rbbr.space
+  ssl:
+    letsencrypt # recognized as a service name
+  dns:
+    service: route53
+    url: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones
+  registrar:
+    service: namecheap
+    url: https://ap.www.namecheap.com/domains/domaincontrolpanel/rbbr.io/domain
+```
+
+Processing this structure:
+```ruby
+yaml = YAML.load_file('example.yml', symbolize_names: true)
+domain_data = yaml[:'rbbr.io']
+
+# Services get parsed into appropriate objects
+repo = ServiceFactory.create(domain_data[:repo], :repo)
+hosting = ServiceFactory.create(domain_data[:hosting], :hosting)
+managed_by = ServiceFactory.create(domain_data[:managed_by], :managed_by)
+ssl = ServiceFactory.create(domain_data[:ssl], :ssl)
+dns = ServiceFactory.create(domain_data[:dns], :dns)
+registrar = ServiceFactory.create(domain_data[:registrar], :registrar)
+
+# Creating domain object
+domain = Domain.new('rbbr.io', dns, registrar)
+
+# Domain has structured data
+domain.name      # => "rbbr.io"
+domain.dns.service  # => "Route53"
+domain.registrar.service # => "Namecheap"
+```
+
+## Data Structures
+
+The library provides the following main classes:
+
+- `Service`: Represents a web service with a name and URL
+- `Domain`: Represents domain information
+- `Hosting`: Represents website hosting information
+- `ServiceFactory`: Factory for creating service objects from various data formats
+
+## Development and Contribution
+
+1. Fork the repository
+2. Create a branch for your changes (`git checkout -b my-new-feature`)
+3. Commit your changes (`git commit -am 'Add new feature'`)
+4. Push to the branch (`git push origin my-new-feature`)
+5. Create a Pull Request
+
+## License
+
+This gem is available under the MIT license. See the [LICENSE.txt](LICENSE.txt) file for details.

@@ -55,6 +55,56 @@ if domain_services[:dns]
 end
 ```
 
+### Working with Simple Fields
+
+You can specify which fields should be treated as simple string values, not as services:
+
+```ruby
+# Define which fields should remain as simple strings (not wrapped in Service objects)
+simple_fields = [:project, :role, :environment, :registry, :bought_at]
+
+# Parse with simple fields
+parsed_data = SitedogParser::Parser.parse(yaml_data, simple_fields: simple_fields)
+
+# Now you can access these fields directly as strings
+domain_services = parsed_data['example.com']
+if domain_services[:project]
+  puts "Project: #{domain_services[:project]}"  # This is a string, not a Service object
+end
+
+# Find domains with a specific field value
+domains_with_production = SitedogParser::Parser.get_domains_by_field_value(parsed_data, :environment, 'production')
+puts "Production domains: #{domains_with_production.join(', ')}"
+```
+
+### Finding Dictionary Candidates
+
+You can use the DictionaryAnalyzer to find services that might be missing from your dictionary:
+
+```ruby
+require 'sitedog_parser'
+require_relative 'lib/dictionary_analyzer'
+
+# Parse your data first
+parsed_data = SitedogParser::Parser.parse_file('data.yml')
+
+# Find candidates for the dictionary (services with name but no URL)
+candidates = SitedogParser::DictionaryAnalyzer.find_dictionary_candidates(parsed_data)
+
+# Generate a report
+report = SitedogParser::DictionaryAnalyzer.report(parsed_data)
+puts report
+
+# Or use the provided script
+# bin/analyze_dictionary data.yml
+```
+
+The report will show:
+1. A list of services that are missing from the dictionary
+2. How many domains use each service
+3. In which context (service type) each service is used
+4. A YAML template ready to be added to your dictionary
+
 ### Example: Processing a YAML Configuration
 
 Input YAML file (`services.yml`):
@@ -115,7 +165,7 @@ Output:
 Domains: example.com, another-site.org
 
 Hosting services:
-- Aws: https://aws.amazon.com
+- Amazon Web Services: https://aws.amazon.com
 - Digitalocean: https://digitalocean.com
 
 DNS services:
@@ -123,7 +173,7 @@ DNS services:
 - Domains: https://domains.google.com
 
 Services for example.com:
-hosting: Aws
+hosting: Amazon Web Services
 dns: Cloudflare
 registrar: Namecheap
 ssl: Letsencrypt

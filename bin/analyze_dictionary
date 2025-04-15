@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'sitedog_parser'
+require_relative '../lib/dictionary_analyzer'
+
+if ARGV.empty?
+  puts "Usage: analyze_dictionary <path_to_yaml_file>"
+  puts "Example: analyze_dictionary test/fixtures/multiple.yaml"
+  exit 1
+end
+
+file_path = ARGV[0]
+
+unless File.exist?(file_path)
+  puts "Error: File '#{file_path}' not found."
+  exit 1
+end
+
+begin
+  # Загружаем и обрабатываем YAML
+  yaml_data = YAML.load_file(file_path, symbolize_names: true)
+
+  # Проверяем структуру
+  sites_data = nil
+  if yaml_data[:sites].is_a?(Hash)
+    sites_data = yaml_data[:sites]
+  elsif yaml_data.values.first.is_a?(Hash)
+    # Если нет корневого ключа 'sites', просто берем первый уровень
+    sites_data = yaml_data
+  else
+    puts "Error: Expected YAML with domain data in either 'sites' key or at the root level."
+    exit 1
+  end
+
+  # Определяем простые поля, которые не должны рассматриваться как сервисы
+  simple_fields = [:project, :role, :environment, :registry, :bought_at]
+
+  # Анализируем данные через наш интерфейс Parser
+  data = SitedogParser::Parser.parse(sites_data, simple_fields: simple_fields)
+
+  # Генерируем отчет
+  report = SitedogParser::DictionaryAnalyzer.report(data)
+
+  puts "\n#{report}\n"
+
+rescue => e
+  puts "Error processing file: #{e.message}"
+  puts e.backtrace.join("\n")
+  exit 1
+end

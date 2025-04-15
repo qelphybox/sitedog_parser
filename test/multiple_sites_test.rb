@@ -11,8 +11,13 @@ class MultipleSitesTest < Minitest::Test
     # Проверяем структуру
     assert yaml_data[:sites].is_a?(Hash), "Expected YAML with 'sites' key containing domain data"
 
-    # Используем наш парсер для обработки данных
-    @parsed_data = SitedogParser::Parser.parse(yaml_data[:sites])
+    # Используем наш парсер для обработки данных с простыми полями
+    @parsed_data = SitedogParser::Parser.parse(
+      yaml_data[:sites],
+      simple_fields: [:project, :role, :environment, :bought_at]
+    )
+
+    binding.pry
   end
 
   def test_domains_count
@@ -87,12 +92,66 @@ class MultipleSitesTest < Minitest::Test
     assert_equal 'terraform', domain_services[:managed_by].first.service
   end
 
+  def test_simple_fields
+    # Проверяем, что "простые" поля действительно остаются строками, а не превращаются в сервисы
+
+    # Проверяем project для gitlab-ci.site
+    domain_services = get_domain_services(@parsed_data, 'gitlab-ci.site')
+    assert_equal 'gitlabfan', domain_services[:project]
+    assert_instance_of String, domain_services[:project]
+
+    # Проверяем role для gitlab-ci.rocks
+    domain_services = get_domain_services(@parsed_data, 'gitlab-ci.rocks')
+    assert_equal 'landing', domain_services[:role]
+    assert_instance_of String, domain_services[:role]
+
+    # Проверяем environment для app.setyl.com
+    domain_services = get_domain_services(@parsed_data, 'app.setyl.com')
+    assert_equal 'production', domain_services[:environment]
+    assert_instance_of String, domain_services[:environment]
+
+    # Проверяем registry для app.setyl.com
+    assert_equal 'gitlab', domain_services[:registry]
+    assert_instance_of String, domain_services[:registry]
+
+    # Проверяем bought_at для sitedock.my
+    domain_services = get_domain_services(@parsed_data, 'sitedock.my')
+    assert_equal 'Apr 1, 2025 01:27:35 AM', domain_services[:bought_at]
+    assert_instance_of String, domain_services[:bought_at]
+  end
+
+  def test_get_domains_by_field_value
+    # Проверяем поиск доменов по значению простого поля
+
+    # Находим все домены с project: gitlabfan
+    gitlabfan_domains = SitedogParser::Parser.get_domains_by_field_value(@parsed_data, :project, 'gitlabfan')
+    assert_equal 3, gitlabfan_domains.size
+    gitlabfan_domains_as_strings = gitlabfan_domains.map(&:to_s)
+    assert_includes gitlabfan_domains_as_strings, 'gitlab-ci.site'
+    assert_includes gitlabfan_domains_as_strings, 'gitlab-ci.rocks'
+    assert_includes gitlabfan_domains_as_strings, 'gitlabfan.com'
+
+    # Находим все домены с role: landing
+    landing_domains = SitedogParser::Parser.get_domains_by_field_value(@parsed_data, :role, 'landing')
+    assert_equal 2, landing_domains.size
+    landing_domains_as_strings = landing_domains.map(&:to_s)
+    assert_includes landing_domains_as_strings, 'gitlab-ci.site'
+    assert_includes landing_domains_as_strings, 'gitlab-ci.rocks'
+
+    # Находим все домены с environment: production
+    prod_domains = SitedogParser::Parser.get_domains_by_field_value(@parsed_data, :environment, 'production')
+    assert_equal 1, prod_domains.size
+    assert_equal 'app.setyl.com', prod_domains.first.to_s
+  end
+
   def test_bought_at_value
     # Проверяем обработку дат и других специальных значений
     domain_services = get_domain_services(@parsed_data, 'sitedock.my')
 
     assert_equal 'namecheap', domain_services[:registrar].first.service
-    assert_equal 'Apr 1, 2025 01:27:35 AM', domain_services[:bought_at].first.service
+    # Проверяем, что bought_at это строка, а не сервис
+    assert_equal 'Apr 1, 2025 01:27:35 AM', domain_services[:bought_at]
+    assert_instance_of String, domain_services[:bought_at]
   end
 
   def test_service_counts
@@ -103,9 +162,9 @@ class MultipleSitesTest < Minitest::Test
       service_stats[type] = services.size
     end
 
-    assert_equal 14, service_stats[:hosting], "Expected 15 hosting services"
+    assert_equal 14, service_stats[:hosting], "Expected 14 hosting services"
     assert_equal 9, service_stats[:registrar], "Expected 9 registrar services"
-    assert_equal 4, service_stats[:dns], "Expected 6 DNS services"
+    assert_equal 4, service_stats[:dns], "Expected 4 DNS services"
     assert_equal 5, service_stats[:mail], "Expected 5 mail services"
     assert_equal 4, service_stats[:managed_by], "Expected 4 managed_by services"
   end

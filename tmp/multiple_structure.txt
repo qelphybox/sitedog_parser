@@ -1,0 +1,29 @@
+{:"rbbr.io"=>
+  {:mail=>[#<data Service service="gsuite", url="https://workspace.google.com", children=[]>],
+   :registrar=>[#<data Service service="aws", url="https://aws.amazon.com", children=[]>],
+   :dns=>[#<data Service service="aws", url="https://aws.amazon.com", children=[]>],
+  {:repo=>[#<data Service service="repo", url="https://github.com/inem/DOPE", children=[]>],
+   :hosting=>[#<data Service service="hetzner", url="https://hetzner.com", children=[]>],
+   :managed_by=>[#<data Service service="terraform", url=nil, children=[]>],
+   :deploy=>[#<data Service service="kamal", url=nil, children=[]>],
+   :registrar=>[#<data Service service="namecheap", url="https://namecheap.com", children=[]>],
+   :monitoring=>[#<data Service service="appsignal", url=nil, children=[]>]},
+ :"app.setyl.com"=>
+  {:repo=>[#<data Service service="GitLab", url="https://gitlab.com/setyl-team/setyl-backend", children=[]>],
+   :ci=>[#<data Service service="GitLab", url="https://gitlab.com/setyl-team/setyl-backend/-/pipelines", children=[]>],
+   :deploy=>[#<data Service service="kamal", url=nil, children=[]>],
+   :environment=>[#<data Service service="production", url=nil, children=[]>],
+   :project=>[#<data Service service="setyl-web", url=nil, children=[]>],
+   :hosting=>[#<data Service service="aws", url="https://aws.amazon.com", children=[]>],
+   :managed_by=>[#<data Service service="terraform", url=nil, children=[]>],
+   :registry=>[#<data Service service="gitlab", url="https://about.gitlab.com/", children=[]>]},
+ :"gitlab-ci.site"=>
+  {:hosting=>[#<data Service service="carrd", url=nil, children=[]>], :project=>[#<data Service service="gitlabfan", url=nil, children=[]>], :role=>[#<data Service service="landing", url=nil, children=[]>]},
+ :"gitlab-ci.rocks"=>
+  {:hosting=>[#<data Service service="carrd", url=nil, children=[]>], :project=>[#<data Service service="gitlabfan", url=nil, children=[]>], :role=>[#<data Service service="landing", url=nil, children=[]>]},
+ :"gitlabfan.com"=>
+  {:registrar=>[#<data Service service="gandi", url=nil, children=[]>],
+   :hosting=>[#<data Service service="medium", url=nil, children=[]>],
+   :project=>[#<data Service service="gitlabfan", url=nil, children=[]>],
+   :role=>[#<data Service service="blog", url=nil, children=[]>]},
+ :"sitedock.my"=>{:registrar=>[#<data Service service="namecheap", url="https://namecheap.com", children=[]>], :bought_at=>[#<data Service service="Apr 1, 2025 01:27:35 AM", url=nil, children=[]>]}}

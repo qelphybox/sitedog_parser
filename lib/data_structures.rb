@@ -20,7 +20,7 @@ yaml.each do |domain, items|
   domain = Domain.new(domain, services[:dns], services[:registrar])
   hosting = Hosting.new(services[:hosting], services[:cdn], services[:ssl], services[:repo])
 
-  binding.pry
+  # binding.pry
 end
 
 puts

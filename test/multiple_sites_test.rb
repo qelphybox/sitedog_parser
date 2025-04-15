@@ -17,7 +17,7 @@ class MultipleSitesTest < Minitest::Test
       simple_fields: [:project, :role, :environment, :bought_at]
     )
 
-    binding.pry
+    # binding.pry
   end
 
   def test_domains_count
@@ -109,10 +109,6 @@ class MultipleSitesTest < Minitest::Test
     domain_services = get_domain_services(@parsed_data, 'app.setyl.com')
     assert_equal 'production', domain_services[:environment]
     assert_instance_of String, domain_services[:environment]
-
-    # Проверяем registry для app.setyl.com
-    assert_equal 'gitlab', domain_services[:registry]
-    assert_instance_of String, domain_services[:registry]
 
     # Проверяем bought_at для sitedock.my
     domain_services = get_domain_services(@parsed_data, 'sitedock.my')

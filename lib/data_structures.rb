@@ -1,6 +1,6 @@
 require 'yaml'
-require 'pry'
-require_relative 'entities'
+
+require_relative 'service'
 require_relative 'dictionary'
 require_relative 'url_checker'
 require_relative 'service_factory'

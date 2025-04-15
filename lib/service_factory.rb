@@ -1,7 +1,7 @@
 require 'pry'
 require_relative 'url_checker'
 require_relative 'dictionary'
-require_relative 'entities'
+require_relative 'service'
 
 # Factory for creating Service objects from different data formats
 class ServiceFactory

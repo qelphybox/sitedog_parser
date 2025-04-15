@@ -1,6 +1,6 @@
 # SitedogParser
 
-A library for parsing and classifying web services, hosting, and domain data from YAML files into structured Ruby objects.
+A library for parsing and classifying web services from YAML files into structured Ruby objects.
 
 ## Installation
 
@@ -24,69 +24,124 @@ $ gem install sitedog_parser
 
 ## Usage
 
-### Basic Example
+### High-Level Interface
+
+The easiest way to use SitedogParser is through its high-level interface:
+
 ```ruby
 require 'sitedog_parser'
-require 'yaml'
 
-# Load data from a YAML file
-yaml = YAML.load_file('data.yml', symbolize_names: true)
+# Parse from a YAML file
+parsed_data = SitedogParser::Parser.parse_file('data.yml')
 
-# Create service objects
-services = {}
-yaml.each do |domain, items|
-  items.each do |service_type, data|
-    service = ServiceFactory.create(data, service_type)
-    services[service_type] ||= []
-    services[service_type] << service if service
-  end
+# Or parse from a hash (if you already loaded the YAML)
+yaml_data = YAML.load_file('data.yml', symbolize_names: true)
+parsed_data = SitedogParser::Parser.parse(yaml_data)
 
-  # Create domain object
-  domain_obj = Domain.new(domain, services[:dns], services[:registrar])
+# Get all services of a specific type across all domains
+all_hosting_services = SitedogParser::Parser.get_services_by_type(parsed_data, :hosting)
+all_hosting_services.each do |service|
+  puts "Hosting service: #{service.service}, URL: #{service.url}"
+end
 
-  # Create hosting object
-  hosting = Hosting.new(services[:hosting], services[:cdn], services[:ssl], services[:repo])
+# Get all domain names
+domain_names = SitedogParser::Parser.get_domain_names(parsed_data)
+puts "Found domains: #{domain_names.join(', ')}"
 
-  # Now you can use domain_obj and hosting for further processing
+# Working with specific domain's services
+domain_services = parsed_data['example.com']
+if domain_services[:dns]
+  puts "DNS service: #{domain_services[:dns].first.service}"
 end
 ```
 
-### Processing URLs and Service Names
+### Example: Processing a YAML Configuration
 
-The library automatically normalizes URLs and identifies service names:
+Input YAML file (`services.yml`):
 
-```ruby
-# Create a service from a URL
-service = ServiceFactory.create("https://github.com/username/repo")
-puts service.service  # => "Github"
-puts service.url      # => "https://github.com"
+```yaml
+example.com:
+  hosting: https://aws.amazon.com
+  dns:
+    service: cloudflare
+    url: https://cloudflare.com
+  registrar: namecheap
+  ssl: letsencrypt
+  repo: https://github.com/example/repo
 
-# Create a service from a name
-service = ServiceFactory.create("GitHub")
-puts service.service  # => "GitHub"
-puts service.url      # => "https://github.com"
+another-site.org:
+  hosting:
+    service: digitalocean
+    url: https://digitalocean.com
+  cdn: https://cloudfront.aws.amazon.com
+  dns: https://domains.google.com
 ```
 
-### Processing Complex Structures
-
-The library can handle nested data structures:
+Processing this file:
 
 ```ruby
-data = {
-  hosting: {
-    aws: "https://aws.amazon.com",
-    digitalocean: "https://digitalocean.com"
-  }
-}
+require 'sitedog_parser'
 
-service = ServiceFactory.create(data)
-puts service.service               # => "Hosting"
-puts service.children.size         # => 2
-puts service.children[0].service   # => "Aws"
-puts service.children[0].url       # => "https://aws.amazon.com"
+# Parse the file
+data = SitedogParser::Parser.parse_file('services.yml')
+
+# Get all domains
+puts "Domains: #{SitedogParser::Parser.get_domain_names(data).join(', ')}"
+
+# Get all hosting services
+hosting_services = SitedogParser::Parser.get_services_by_type(data, :hosting)
+puts "\nHosting services:"
+hosting_services.each do |service|
+  puts "- #{service.service}: #{service.url}"
+end
+
+# Get all DNS services
+dns_services = SitedogParser::Parser.get_services_by_type(data, :dns)
+puts "\nDNS services:"
+dns_services.each do |service|
+  puts "- #{service.service}: #{service.url}"
+end
+
+# Access a specific domain's services
+puts "\nServices for example.com:"
+example_services = data['example.com']
+example_services.each do |type, services|
+  puts "#{type}: #{services.first.service}"
+end
 ```
 
-### Normalizing Different Data Formats
+Output:
+```
+Domains: example.com, another-site.org
+
+Hosting services:
+- Aws: https://aws.amazon.com
+- Digitalocean: https://digitalocean.com
+
+DNS services:
+- Cloudflare: https://cloudflare.com
+- Domains: https://domains.google.com
+
+Services for example.com:
+hosting: Aws
+dns: Cloudflare
+registrar: Namecheap
+ssl: Letsencrypt
+repo: Github
+```
+
+### Service Object Structure
+
+Each service object has the following structure:
+
+```ruby
+# Service fields
+service.service  # Name of the service (capitalized string)
+service.url      # URL of the service (string or nil)
+service.children # Child services (array of Service objects, empty if none)
+```
+
+### Processing Different Data Formats
 
 SitedogParser's strength is in normalizing different data formats into a consistent structure. Here are examples showing how various input formats are handled:
 
@@ -170,56 +225,6 @@ service.children[0].url     # => "https://aws.amazon.com"
 service.children[1].service # => "Cdn"
 service.children[1].url     # => "https://cloudflare.com"
 ```
-
-#### 6. Real-world complex example
-```yaml
-# Input YAML
-rbbr.io:
-  repo: http://github.com/rbbr-io/about
-  hosting: https://console.hetzner.cloud/projects/2406094/servers/62263307/overview
-  managed_by:
-    service: easypanel
-    url: https://rbbr.space
-  ssl:
-    letsencrypt # recognized as a service name
-  dns:
-    service: route53
-    url: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones
-  registrar:
-    service: namecheap
-    url: https://ap.www.namecheap.com/domains/domaincontrolpanel/rbbr.io/domain
-```
-
-Processing this structure:
-```ruby
-yaml = YAML.load_file('example.yml', symbolize_names: true)
-domain_data = yaml[:'rbbr.io']
-
-# Services get parsed into appropriate objects
-repo = ServiceFactory.create(domain_data[:repo], :repo)
-hosting = ServiceFactory.create(domain_data[:hosting], :hosting)
-managed_by = ServiceFactory.create(domain_data[:managed_by], :managed_by)
-ssl = ServiceFactory.create(domain_data[:ssl], :ssl)
-dns = ServiceFactory.create(domain_data[:dns], :dns)
-registrar = ServiceFactory.create(domain_data[:registrar], :registrar)
-
-# Creating domain object
-domain = Domain.new('rbbr.io', dns, registrar)
-
-# Domain has structured data
-domain.name      # => "rbbr.io"
-domain.dns.service  # => "Route53"
-domain.registrar.service # => "Namecheap"
-```
-
-## Data Structures
-
-The library provides the following main classes:
-
-- `Service`: Represents a web service with a name and URL
-- `Domain`: Represents domain information
-- `Hosting`: Represents website hosting information
-- `ServiceFactory`: Factory for creating service objects from various data formats
 
 ## Development and Contribution
 

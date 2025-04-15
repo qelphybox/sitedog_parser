@@ -18,12 +18,12 @@ class ServiceFactory
       url = UrlChecker.normalize_url(data)
       slug = Dictionary.new.match(url)&.dig('name')
 
-      slug = UrlChecker.extract_name(url) if slug.nil?
-
-      # Используем service_type как запасной вариант, но только если не смогли
-      # извлечь имя сервиса другими способами
+      # Если не нашли в словаре и есть service_type, используем его
       if slug.nil? && service_type
         slug = service_type.to_s
+      else
+        # Иначе пытаемся извлечь имя из URL
+        slug = UrlChecker.extract_name(url) if slug.nil?
       end
 
       puts "url: #{slug} <- #{url}"
@@ -38,50 +38,100 @@ class ServiceFactory
     in Hash
       puts "hash: #{data}"
 
-      # Проверяем, содержит ли хеш только URL-подобные строки (список сервисов)
+      # 1. Проверяем, содержит ли хеш только URL-подобные строки (список сервисов)
       if data.values.all? { |v| v.is_a?(String) && UrlChecker.url_like?(v) }
         puts "hash with services: #{data.keys.join(', ')}"
-        # Превращаем в массив пар [service_name, url] и обрабатываем как массив
-        services_array = data.map { |name, url| { service: name.to_s, url: url } }
-        return create(services_array.first, service_type) if services_array.any?
+        # Создаем массив дочерних сервисов
+        children = []
+        data.each do |key, url_value|
+          service_name = key.to_s
+          child_service = Service.new(service: service_name.capitalize, url: url_value)
+          children << child_service
+        end
+
+        # Создаем родительский сервис с дочерними элементами
+        if service_type && children.any?
+          return Service.new(service: service_type.to_s, children: children)
+        elsif children.size == 1
+          # Если только один сервис и нет service_type, возвращаем его напрямую
+          return children.first
+        end
       end
 
-      # Если хеш содержит service и url (возможно с доп. полями)
-      if data.key?(:service) || data.key?("service")
-        key = data.key?(:service) ? :service : "service"
-        slug = data[key].to_s.capitalize
+      # 2. Если хеш содержит service и url (возможно с доп. полями)
+      if (data.key?(:service) || data.key?("service")) &&
+         (data.key?(:url) || data.key?("url"))
+        service_key = data.key?(:service) ? :service : "service"
+        service_name = data[service_key].to_s
 
         url_key = data.key?(:url) ? :url : "url"
-        url = data[url_key] if data.key?(url_key)
-      else
-        # Проверяем наличие вложенных сервисов
-        children = []
-        direct_url_keys = []
+        url_value = data[url_key]
 
-        data.each do |key, value|
-          if value.is_a?(Hash)
-            # Рекурсивно создаем дочерний сервис
-            child_service = create(value, key)
-            children << child_service if child_service
-          elsif value.is_a?(String) && UrlChecker.url_like?(value)
-            # URL как прямое значение ключа - создаем отдельный дочерний сервис
-            child_service = create(value, key)
-            children << child_service if child_service
-            direct_url_keys << key
+        return Service.new(service: service_name.capitalize, url: url_value)
+      end
+
+      # 3. Обрабатываем вложенные хеши
+      children = []
+
+      data.each do |key, value|
+        child = nil
+
+        if value.is_a?(Hash)
+          # 3.1 Если в значении есть хеш с service и url
+          if (value.key?(:service) || value.key?("service")) &&
+             (value.key?(:url) || value.key?("url"))
+            service_key = value.key?(:service) ? :service : "service"
+            service_name = value[service_key].to_s
+
+            url_key = value.key?(:url) ? :url : "url"
+            url_value = value[url_key]
+
+            child = Service.new(service: service_name.capitalize, url: url_value)
+          # 3.2 Если в значении есть хеш только с URL-подобными значениями
+          elsif value.values.all? { |v| v.is_a?(String) && UrlChecker.url_like?(v) }
+            child_children = []
+
+            value.each do |sub_key, url_value|
+              child_children << Service.new(service: sub_key.to_s.capitalize, url: url_value)
+            end
+
+            child = Service.new(service: key.to_s, children: child_children)
+          # 3.3 Рекурсивно обрабатываем другие случаи
+          else
+            child = create(value, key)
+
+            # Если ничего не получилось, создаем пустой сервис с именем ключа
+            if child.nil? && value.is_a?(Hash)
+              child_children = []
+              has_urls = false
+
+              value.each do |sub_key, sub_value|
+                if sub_value.is_a?(String) && UrlChecker.url_like?(sub_value)
+                  has_urls = true
+                  child_children << Service.new(service: sub_key.to_s.capitalize, url: sub_value)
+                end
+              end
+
+              child = Service.new(service: key.to_s, children: child_children) if has_urls
+            end
           end
+        # 3.4 Если значение - строка URL
+        elsif value.is_a?(String) && UrlChecker.url_like?(value)
+          child = Service.new(service: key.to_s.capitalize, url: value)
         end
 
-        # Если нашли дочерние сервисы, используем service_type как имя родительского сервиса
-        if children.any?
-          slug = service_type.to_s if service_type
-          return Service.new(service: slug, children: children) if slug
-        end
+        children << child if child
+      end
 
-        # Если все значения - URL, и нет вложенных хешей, создаем сервис из первого URL
-        if direct_url_keys.any? && direct_url_keys.size == data.size
-          first_key = direct_url_keys.first
-          return create(data[first_key], first_key)
-        end
+      # Создаем родительский сервис, если есть дочерние элементы
+      if children.any? && service_type
+        return Service.new(service: service_type.to_s, children: children)
+      elsif children.size == 1 && !service_type
+        # Если только один дочерний элемент и нет service_type, возвращаем его
+        return children.first
+      elsif children.any?
+        # Если есть дочерние элементы, но нет service_type, создаем сервис с неизвестным именем
+        return Service.new(service: "Unknown", children: children)
       end
     in Array
       puts "array: #{data}"

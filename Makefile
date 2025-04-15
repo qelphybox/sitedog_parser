@@ -19,7 +19,7 @@ analyze:
 	bin/analyze_dictionary test/fixtures/multiple.yaml
 
 publish:
-	bundle exec gem push pkg/sitedog_parser-*.gem
+	bundle exec gem push `ls -t pkg/sitedog_parser-*.gem | head -1`
 
 up:
 	bundle exec rake bump:patch

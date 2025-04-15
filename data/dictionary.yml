@@ -1,0 +1,168 @@
+namecheap:
+  name: Namecheap
+  url: https://namecheap.com
+  aliases: name-cheap
+  url_pattern: namecheap\.com
+  image_url: https://www.namecheap.com/assets/img/nc-logo.svg
+
+godaddy:
+  name: GoDaddy
+  url: https://godaddy.com
+  aliases: go-daddy
+  url_pattern: godaddy\.com
+  image_url: https://img1.wsimg.com/iil/43405/0c10841c-619a-4fb6-9841-58fe4c6279df/godaddy-logo.svg
+
+cloudflare:
+  name: Cloudflare
+  url: https://cloudflare.com
+  aliases: cloud-flare
+  url_pattern: cloudflare\.com
+  image_url: https://www.cloudflare.com/img/logo-cloudflare-dark.svg
+
+digitalocean:
+  name: DigitalOcean
+  url: https://digitalocean.com
+  aliases: digital-ocean
+  url_pattern: digitalocean\.com
+  image_url: https://www.digitalocean.com/static/brand/DO-logo-blue.svg
+
+heroku:
+  name: Heroku
+  url: https://heroku.com
+  aliases:
+  url_pattern: heroku\.com|herokuapp\.com
+  image_url: https://www.herokucdn.com/favicon.ico
+
+netlify:
+  name: Netlify
+  url: https://netlify.com
+  aliases:
+  url_pattern: netlify\.com|netlify\.app
+  image_url: https://www.netlify.com/v3/img/components/logomark.svg
+
+vercel:
+  name: Vercel
+  url: https://vercel.com
+  aliases: zeit
+  url_pattern: vercel\.com|vercel\.app
+  image_url: https://assets.vercel.com/image/upload/front/favicon/vercel/favicon.svg
+
+github:
+  name: GitHub Pages
+  url: https://pages.github.com
+  aliases: github-pages,gh-pages
+  url_pattern: github\.io
+  image_url: https://github.githubassets.com/favicons/favicon.svg
+
+hostgator:
+  name: HostGator
+  url: https://hostgator.com
+  aliases: host-gator
+  url_pattern: hostgator\.com
+  image_url: https://www.hostgator.com/images/logos/hostgator-logo-white.svg
+
+bluehost:
+  name: Bluehost
+  url: https://bluehost.com
+  aliases: blue-host
+  url_pattern: bluehost\.com
+  image_url: https://www.bluehost.com/resources/logos/bluehost-logo-emblem.svg
+
+dreamhost:
+  name: DreamHost
+  url: https://dreamhost.com
+  aliases: dream-host
+  url_pattern: dreamhost\.com
+  image_url: https://www.dreamhost.com/assets/favicons/favicon-32x32.png
+
+siteground:
+  name: SiteGround
+  url: https://siteground.com
+  aliases: site-ground
+  url_pattern: siteground\.com
+  image_url: https://www.siteground.com/static/en/img/logos/logo-light.svg
+
+linode:
+  name: Linode
+  url: https://linode.com
+  aliases:
+  url_pattern: linode\.com
+  image_url: https://www.linode.com/wp-content/uploads/2021/01/Linode_logo.svg
+
+vultr:
+  name: Vultr
+  url: https://vultr.com
+  aliases:
+  url_pattern: vultr\.com
+  image_url: https://www.vultr.com/dist/img/media/vultr-logo.svg
+
+firebase:
+  name: Firebase Hosting
+  url: https://firebase.google.com/products/hosting
+  aliases: firebase-hosting
+  url_pattern: firebaseapp\.com|web\.app
+  image_url: https://www.gstatic.com/devrel-devsite/prod/v45f61267e22826169cf5d5f452882f7812c8cfb5f8b103a48c0d88727908b295/firebase/images/touchicon-180.png
+
+gitlab:
+  name: GitLab
+  url: https://about.gitlab.com/
+  aliases:
+  url_pattern: gitlab\.com\/*
+  image_url: https://gitlab.com/uploads/-/system/group/avatar/6543/logo-extra-whitespace.png
+
+gitlab_pages:
+  name: GitLab Pages
+  url: https://docs.gitlab.com/ee/user/project/pages/
+  aliases:
+  url_pattern: gitlab\.io
+  image_url: https://gitlab.com/uploads/-/system/group/avatar/6543/logo-extra-whitespace.png
+
+squarespace:
+  name: Squarespace
+  url: https://squarespace.com
+  aliases: square-space
+  url_pattern: squarespace\.com
+  image_url: https://static1.squarespace.com/static/ta/5134cbefe4b0c6fb04df8065/12/favicon.ico
+
+wix:
+  name: Wix
+  url: https://wix.com
+  aliases:
+  url_pattern: wix\.com|wixsite\.com
+  image_url: https://www.wix.com/favicon.ico
+
+shopify:
+  name: Shopify
+  url: https://shopify.com
+  aliases:
+  url_pattern: shopify\.com|myshopify\.com
+  image_url: https://cdn.shopify.com/shopifycloud/brochure/assets/brand-assets/shopify-logo-primary-logo-456baa801ee66a0a435671082365958316831c9960c480451dd0330bcdae304f.svg
+
+hetzner:
+  name: Hetzner
+  url: https://hetzner.com
+  aliases: hetzer,hetzner-cloud
+  url_pattern: hetzner\.com|hetzner\.cloud
+  image_url: https://www.hetzner.com/favicon.ico
+
+route53:
+  name: AWS Route 53
+  url: https://aws.amazon.com/route53/
+  aliases: route-53,route 53,aws-route-53,aws console route53,aws route53 console
+  url_pattern: aws\.amazon\.com.*route53|route53|console\.aws\.amazon\.com.*route53
+  image_url: https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png
+
+gsuite:
+  name: G Suite
+  url: https://workspace.google.com
+  aliases: google-suite,google-workspace
+  url_pattern: admin\.google\.com|workspace\.google\.com
+  image_url: https://workspace.google.com/static/img/favicon.ico
+
+
+aws:
+  name: Amazon Web Services
+  url: https://aws.amazon.com
+  aliases: amazon-web-services
+  url_pattern: aws\.amazon\.com
+  image_url: https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png

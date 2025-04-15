@@ -1,0 +1,5 @@
+rbbr.io:
+  mail: gsuite
+  registrar: namecheap
+  dns: route53
+  hosting: hetzner

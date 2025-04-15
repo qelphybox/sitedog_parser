@@ -1,0 +1,29 @@
+rbbr.io:
+  repo: http://github.com/rbbr-io/about
+  hosting: https://console.hetzner.cloud/projects/2406094/servers/62263307/overview
+  mail:
+    service: gsuite
+    url: https://admin.google.com
+  ssl:
+    letsencrypt # by easypanel
+  dns:
+    service: route53
+    url: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones?region=us-east-1#ListRecordSets/Z016716824LS3S9OC1P6U
+  registrar:
+    service: namecheap
+    url: https://ap.www.namecheap.com/domains/domaincontrolpanel/rbbr.io/domain
+  integrations:
+    n8n: https://n8n-n8n.7dglae.easypanel.host/workflow/hVqO0ZLaetO12ojj
+    resend: https://resend.com/domains/e5e4ad6a-0f4e-48a8-bb3a-17465bad0b45
+    slack: https://api.slack.com/apps/A08LS1L2QV9/oauth?
+    imgproxy: https://rbbr.space/projects/n8n/app/imgproxy/environment
+    hubspot: https://app-eu1.hubspot.com/contacts/145975086/objects/0-1/views/all/list
+  other:
+    imgproxy-help: https://progapandist.github.io/imgproxy-form/#
+  infrastructure:
+    appsignal:
+      dashboard: https://appsignal.com/rbbr/sites/67eeab66b9811010d8c90a8f/dashboard
+      errors: https://appsignal.com/rbbr/sites/67eeab66b9811010d8c90a8f/exceptions
+    managed_by:
+      service: easypanel
+      url: https://rbbr.space # https://7dglae.easypanel.host

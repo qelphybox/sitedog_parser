@@ -1,0 +1,14 @@
+---
+rbbr.io:
+  mail:
+    service: gsuite
+    url: https://admin.google.com
+  registrar:
+    service: namecheap
+    url: https://ap.www.namecheap.com/domains/domaincontrolpanel/rbbr.io/domain
+  dns:
+    service: route53
+    url: https://us-east-1.console.aws.amazon.com/route53/v2/hostedzones?region=us-east-1#ListRecordSets/Z016716824LS3S9OC1P6U
+  hosting:
+    service: hetzner
+    url: https://console.hetzner.cloud/projects/2406094/servers/62263307/overview

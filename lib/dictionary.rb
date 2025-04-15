@@ -13,8 +13,8 @@ class Dictionary
   #
   # @param dictionary_path [String, nil] path to the dictionary YAML file
   def initialize(dictionary_path = nil)
-    path = dictionary_path || DEFAULT_DICTIONARY_PATH
-    @dictionary = load_dictionary(path)
+    @dictionary_path = dictionary_path || DEFAULT_DICTIONARY_PATH
+    @dictionary = nil # Словарь загрузится лениво при первом обращении
   end
 
   # Look up a provider by slug or alias
@@ -27,10 +27,10 @@ class Dictionary
     slug = slug.downcase.strip
 
     # Direct match by key
-    return @dictionary[slug] if @dictionary.key?(slug)
+    return dictionary[slug] if dictionary.key?(slug)
 
     # Check aliases
-    @dictionary.each do |key, provider|
+    dictionary.each do |key, provider|
       aliases = provider['aliases'].to_s.split(',').map(&:strip)
       return provider.merge('key' => key) if aliases.include?(slug)
     end
@@ -48,7 +48,7 @@ class Dictionary
     normalized_url = UrlChecker.normalize_url(url)
     return nil unless normalized_url
 
-    @dictionary.each do |key, provider|
+    dictionary.each do |key, provider|
       pattern = provider['url_pattern']
       next unless pattern
 
@@ -63,10 +63,17 @@ class Dictionary
   #
   # @return [Hash] the entire dictionary
   def all_providers
-    @dictionary
+    dictionary
   end
 
   private
+
+  # Ленивый доступ к словарю - загружает его только при первом обращении
+  #
+  # @return [Hash] словарь провайдеров
+  def dictionary
+    @dictionary ||= load_dictionary(@dictionary_path)
+  end
 
   # Load the dictionary from a YAML file
   #

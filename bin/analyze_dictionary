@@ -27,6 +27,8 @@ begin
   # Загружаем и обрабатываем YAML
   yaml_data = YAML.load_file(file_path, symbolize_names: true)
 
+  pp yaml_data
+
   # Проверяем структуру
   sites_data = nil
   if yaml_data[:sites].is_a?(Hash)
@@ -44,6 +46,8 @@ begin
 
   # Анализируем данные через наш интерфейс Parser
   data = SitedogParser::Parser.parse(sites_data, simple_fields: simple_fields, dictionary_path: dictionary_path)
+
+  pp data
 
   # Генерируем отчет
   report = SitedogParser::DictionaryAnalyzer.report(data, dictionary_path)

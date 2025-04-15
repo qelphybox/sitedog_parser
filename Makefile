@@ -14,3 +14,6 @@ release:
 
 console:
 	bundle exec bin/console
+
+analyze:
+	bin/analyze_dictionary test/fixtures/multiple.yaml

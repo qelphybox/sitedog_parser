@@ -6,11 +6,15 @@ require_relative 'url_checker'
 
 # Class for working with the provider dictionary
 class Dictionary
+  # Default path to the dictionary
+  DEFAULT_DICTIONARY_PATH = File.expand_path('../../data/dictionary.yml', __FILE__)
+
   # Initialize the dictionary from the YAML file
   #
-  # @param dictionary_path [String] path to the dictionary YAML file
-  def initialize(dictionary_path = File.expand_path('../../data/dictionary.yml', __FILE__))
-    @dictionary = load_dictionary(dictionary_path)
+  # @param dictionary_path [String, nil] path to the dictionary YAML file
+  def initialize(dictionary_path = nil)
+    path = dictionary_path || DEFAULT_DICTIONARY_PATH
+    @dictionary = load_dictionary(path)
   end
 
   # Look up a provider by slug or alias
@@ -69,6 +73,8 @@ class Dictionary
   # @param path [String] path to the dictionary file
   # @return [Hash] loaded dictionary
   def load_dictionary(path)
+    return {} unless path && File.exist?(path)
+
     YAML.load_file(path)
   rescue StandardError => e
     warn "Error loading dictionary: #{e.message}"

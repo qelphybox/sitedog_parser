@@ -4,16 +4,22 @@ require 'bundler/setup'
 require 'sitedog_parser'
 require_relative '../lib/dictionary_analyzer'
 
-if ARGV.empty?
-  puts "Usage: analyze_dictionary <path_to_yaml_file>"
-  puts "Example: analyze_dictionary test/fixtures/multiple.yaml"
+if ARGV.empty? || ARGV.size < 1 || ARGV.size > 2
+  puts "Usage: analyze_dictionary <path_to_yaml_file> [path_to_dictionary]"
+  puts "Example: analyze_dictionary test/fixtures/multiple.yaml [test/fixtures/dictionary.yml]"
   exit 1
 end
 
 file_path = ARGV[0]
+dictionary_path = ARGV[1] if ARGV.size > 1
 
 unless File.exist?(file_path)
   puts "Error: File '#{file_path}' not found."
+  exit 1
+end
+
+if dictionary_path && !File.exist?(dictionary_path)
+  puts "Error: Dictionary file '#{dictionary_path}' not found."
   exit 1
 end
 
@@ -37,10 +43,10 @@ begin
   simple_fields = [:project, :role, :environment, :registry, :bought_at]
 
   # Анализируем данные через наш интерфейс Parser
-  data = SitedogParser::Parser.parse(sites_data, simple_fields: simple_fields)
+  data = SitedogParser::Parser.parse(sites_data, simple_fields: simple_fields, dictionary_path: dictionary_path)
 
   # Генерируем отчет
-  report = SitedogParser::DictionaryAnalyzer.report(data)
+  report = SitedogParser::DictionaryAnalyzer.report(data, dictionary_path)
 
   puts "\n#{report}\n"
 

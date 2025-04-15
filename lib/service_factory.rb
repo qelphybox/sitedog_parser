@@ -9,18 +9,20 @@ class ServiceFactory
   #
   # @param data [String, Hash, Array] data for creating service
   # @param service_type [Symbol] service type (used as fallback)
+  # @param dictionary_path [String, nil] path to the dictionary file (optional)
   # @return [Service] created service object
-  def self.create(data, service_type = nil)
+  def self.create(data, service_type = nil, dictionary_path = nil)
     # Check for nil
     return nil if data.nil?
 
     slug = nil
     url = nil
+    dictionary = Dictionary.new(dictionary_path)
 
     case data
     in String if UrlChecker.url_like?(data) # url
       url = UrlChecker.normalize_url(data)
-      slug = Dictionary.new.match(url)&.dig('name')
+      slug = dictionary.match(url)&.dig('name')
 
       # If not found in dictionary and service_type exists, use it
       if slug.nil? && service_type
@@ -33,7 +35,7 @@ class ServiceFactory
       puts "url: #{slug} <- #{url}"
     in String if !UrlChecker.url_like?(data) # slug
       slug = data
-      url = Dictionary.new.lookup(slug)&.dig('url')
+      url = dictionary.lookup(slug)&.dig('url')
       puts "slug: #{slug} -> #{url}"
     in { service: String => service_slug, url: String => service_url }
       slug = service_slug.to_s.capitalize
@@ -108,7 +110,7 @@ class ServiceFactory
             child = Service.new(service: key.to_s, children: child_children)
           # 3.3 Recursively process other cases
           else
-            child = create(value, key)
+            child = create(value, key, dictionary_path)
 
             # If nothing worked, create an empty service with key name
             if child.nil? && value.is_a?(Hash)
@@ -147,7 +149,7 @@ class ServiceFactory
       puts "array: #{data}"
 
       # Create services from array elements
-      children = data.map { |item| create(item, service_type) }.compact
+      children = data.map { |item| create(item, service_type, dictionary_path) }.compact
 
       # If there are child services, create a parent service with them
       if children.any? && service_type

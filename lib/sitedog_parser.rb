@@ -19,18 +19,20 @@ module SitedogParser
     # @param file_path [String] path to the YAML file
     # @param symbolize_names [Boolean] whether to symbolize keys in the YAML file
     # @param simple_fields [Array<Symbol>] fields that should remain as simple strings without service wrapping
+    # @param dictionary_path [String, nil] path to the dictionary file (optional)
     # @return [Hash] hash containing parsed services by type and domain
-    def self.parse_file(file_path, symbolize_names: true, simple_fields: DEFAULT_SIMPLE_FIELDS)
+    def self.parse_file(file_path, symbolize_names: true, simple_fields: DEFAULT_SIMPLE_FIELDS, dictionary_path: nil)
       yaml = YAML.load_file(file_path, symbolize_names: symbolize_names)
-      parse(yaml, simple_fields: simple_fields)
+      parse(yaml, simple_fields: simple_fields, dictionary_path: dictionary_path)
     end
 
     # Parse YAML data and convert it to structured Ruby objects
     #
     # @param yaml [Hash] YAML data as a hash
     # @param simple_fields [Array<Symbol>] fields that should remain as simple strings without service wrapping
+    # @param dictionary_path [String, nil] path to the dictionary file (optional)
     # @return [Hash] hash containing parsed services by type and domain
-    def self.parse(yaml, simple_fields: DEFAULT_SIMPLE_FIELDS)
+    def self.parse(yaml, simple_fields: DEFAULT_SIMPLE_FIELDS, dictionary_path: nil)
       result = {}
 
       yaml.each do |domain_name, items|
@@ -44,7 +46,7 @@ module SitedogParser
             services[service_type] = data
           else
             # Для обычных полей создаем сервис
-            service = ServiceFactory.create(data, service_type)
+            service = ServiceFactory.create(data, service_type, dictionary_path)
 
             if service
               services[service_type] ||= []

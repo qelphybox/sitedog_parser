@@ -3,7 +3,7 @@ require_relative "../lib/dictionary"
 
 class DictionaryTest < Minitest::Test
   def setup
-    @dictionary = Dictionary.new
+    @dictionary = Dictionary.new('test/fixtures/dictionary.yml')
   end
 
   def test_lookup_by_key

@@ -6,10 +6,11 @@ module SitedogParser
     # Finds all services that are potentially missing from the dictionary (have a name but no URL)
     #
     # @param parsed_data [Hash] data received from Parser
+    # @param dictionary_path [String, nil] path to the dictionary file (optional)
     # @return [Hash] hash with candidates for dictionary addition
-    def self.find_dictionary_candidates(parsed_data)
+    def self.find_dictionary_candidates(parsed_data, dictionary_path = nil)
       candidates = {}
-      current_dictionary = Dictionary.new
+      current_dictionary = dictionary_path ? Dictionary.new(dictionary_path) : Dictionary.new
 
       parsed_data.each do |domain_name, services|
         services.each do |service_type, service_list|
@@ -55,9 +56,10 @@ module SitedogParser
     # Analyzes data and outputs a report on dictionary candidates
     #
     # @param parsed_data [Hash] data received from Parser
+    # @param dictionary_path [String, nil] path to the dictionary file (optional)
     # @return [String] report on dictionary candidates
-    def self.report(parsed_data)
-      candidates = find_dictionary_candidates(parsed_data)
+    def self.report(parsed_data, dictionary_path = nil)
+      candidates = find_dictionary_candidates(parsed_data, dictionary_path)
 
       if candidates.empty?
         return "All services have URLs or are already in the dictionary. No candidates for addition."

@@ -3,12 +3,14 @@ require_relative "../lib/service_factory"
 
 class ServiceFactoryTest < Minitest::Test
   def setup
-    # Мокаем Dictionary для тестов
-    @dictionary_mock = Minitest::Mock.new
     @original_dictionary = Dictionary
     Object.send(:remove_const, :Dictionary)
 
     dictionary_class = Class.new do
+      def initialize(dictionary_path = nil)
+        # Игнорируем путь, используем жесткозакодированные ответы для тестов
+      end
+
       def match(url)
         if url.include?("github")
           {"name" => "GitHub"}

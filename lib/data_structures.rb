@@ -5,7 +5,7 @@ require_relative 'dictionary'
 require_relative 'url_checker'
 require_relative 'service_factory'
 
-yaml = YAML.load_file('test/fixtures/rbbr.io/complex.yml', symbolize_names: true)
+yaml = YAML.load_file('test/fixtures/rbbr.io/full.yml', symbolize_names: true)
 
 services = {}
 

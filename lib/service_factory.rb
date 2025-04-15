@@ -1,3 +1,4 @@
+require 'pry'
 require_relative 'url_checker'
 require_relative 'dictionary'
 require_relative 'entities'
@@ -158,9 +159,9 @@ class ServiceFactory
     else
       nil
     end
-  rescue => e
-    puts "Error creating service: #{e.message}"
-    puts "Data: #{data.inspect}"
-    nil
+  # rescue => e
+  #   puts "Error creating service: #{e.message}"
+  #   puts "Data: #{data.inspect}"
+  #   binding.pry
   end
 end

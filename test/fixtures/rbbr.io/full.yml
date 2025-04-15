@@ -22,6 +22,15 @@ rbbr.io:
     hubspot: https://app-eu1.hubspot.com/contacts/145975086/objects/0-1/views/all/list
   other:
     imgproxy-help: https://progapandist.github.io/imgproxy-form/#
+  text: |
+    rabdom text, and
+    a lot of it
+  another:
+    - ababa
+  another_one:
+    - https://github.com/honeybadger-io/heya
+  ababaother_one:
+    ababa: https://github.com/honeybadger-io/heya
   monitoring:
     appsignal:
       dashboard: https://appsignal.com/rbbr/sites/67eeab66b9811010d8c90a8f/dashboard

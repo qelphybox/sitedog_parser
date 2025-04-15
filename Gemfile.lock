@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sitedock_card_generator (0.1.0)
+    sitedog_parser (0.1.0)
       thor (~> 1.2)
 
 GEM
@@ -25,7 +25,7 @@ DEPENDENCIES
   minitest
   pry
   rake (~> 13.0)
-  sitedock_card_generator!
+  sitedog_parser!
 
 BUNDLED WITH
    2.5.23

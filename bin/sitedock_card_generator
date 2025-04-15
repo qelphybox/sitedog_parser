@@ -1,6 +1,0 @@
-#!/usr/bin/env ruby
-
-require "bundler/setup"
-require "sitedock_card_generator"
-
-SitedockCardGenerator::CLI.start(ARGV)

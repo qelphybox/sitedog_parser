@@ -11,6 +11,9 @@ class ServiceFactory
   # @param service_type [Symbol] тип сервиса (используется как запасной вариант)
   # @return [Service] созданный объект сервиса
   def self.create(data, service_type = nil)
+    # Проверка на nil
+    return nil if data.nil?
+
     slug = nil
     url = nil
 
@@ -38,6 +41,12 @@ class ServiceFactory
       puts "hash: #{slug} + #{url}"
     in Hash
       puts "hash: #{data}"
+
+      # Защита от nil значений в ключевых полях
+      if (data.key?(:service) || data.key?("service")) &&
+         (data[:service].nil? || data["service"].nil?)
+        return nil
+      end
 
       # 1. Проверяем, содержит ли хеш только URL-подобные строки (список сервисов)
       if data.values.all? { |v| v.is_a?(String) && UrlChecker.url_like?(v) }
@@ -151,6 +160,9 @@ class ServiceFactory
       # Если нет дочерних сервисов или нет имени для родительского сервиса,
       # возвращаем nil
       return nil
+    else
+      # Обработка значений, которые не соответствуют ни одному из шаблонов
+      return nil
     end
 
     # Создаем сервис с собранными данными
@@ -159,9 +171,9 @@ class ServiceFactory
     else
       nil
     end
-  # rescue => e
-  #   puts "Error creating service: #{e.message}"
-  #   puts "Data: #{data.inspect}"
-  #   binding.pry
+  rescue => e
+    puts "Error creating service: #{e.message}"
+    puts "Data: #{data.inspect}"
+    return nil
   end
 end

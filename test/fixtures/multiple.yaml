@@ -1,0 +1,76 @@
+sites:
+  rbbr.io:
+    mail: gsuite
+    registrar: aws
+    dns: aws
+    hosting: s3
+  inem.at:
+    registrar: aws
+    dns: aws
+    hosting: carrd
+    mail: zoho
+  speaker.inem.at:
+    hosting: carrd
+  inem.at/jobs:
+    hosting: vercel
+  railshurts.com:
+    registrar: aws
+    dns: aws_route53
+    hosting: aws_s3
+    cdn: cloudlfare
+    mail: zoho
+    managed_by: terraform
+  nemytchenko.ru:
+    registrar: regru
+    dns: aws_route53
+    hosting: carrd
+    mail: yandex
+  t.nemytchenko.ru:
+    hosting: tumblr
+  painlessrails.com:
+    registrar: aws
+    repo: https://gitlab.com/nemytchenko/projects/painless-rails/painless-rails-group/painless-rails-site
+    deploy: ansible
+    hosting: s3
+    cdn: cloudlfare
+    mail: zoho
+    managed_by: terraform
+  dopo.st:
+    registrar: namecheap
+    repo: https://github.com/inem/dopo
+    hosting: replit
+  dope.top:
+    repo: https://github.com/inem/DOPE
+    hosting: hetzner
+    managed_by: terraform
+    deploy: kamal
+    registrar: namecheap
+    monitoring: appsignal
+  app.setyl.com:
+    repo: gitlab.com/setyl-team/setyl-backend
+    ci: https://gitlab.com/setyl-team/setyl-backend/-/pipelines
+    deploy: kamal
+    environment: production
+    project: setyl-web
+    hosting: aws
+    managed_by: terraform
+    registry: gitlab
+  gitlab-ci.site:
+    hosting: carrd
+    project: gitlabfan
+    role: landing
+  gitlab-ci.rocks:
+    hosting: carrd
+    project: gitlabfan
+    role: landing
+  gitlabfan.com:
+    registrar: gandi
+    hosting: medium
+    project: gitlabfan
+    role: blog
+  sitedock.my:
+    registrar: namecheap
+    bought_at: Apr 1, 2025 01:27:35 AM
+
+
+

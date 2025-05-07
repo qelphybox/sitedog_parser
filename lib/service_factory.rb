@@ -2,6 +2,7 @@ require 'pry'
 require_relative 'url_checker'
 require_relative 'dictionary'
 require_relative 'service'
+require 'logger'
 
 # Factory for creating Service objects from different data formats
 class ServiceFactory
@@ -10,8 +11,13 @@ class ServiceFactory
   # @param data [String, Hash, Array] data for creating service
   # @param service_type [Symbol] service type (used as fallback)
   # @param dictionary_path [String, nil] path to the dictionary file (optional)
+  # @param options [Hash] дополнительные опции
+  # @option options [Logger] :logger логгер для вывода сообщений
   # @return [Service] created service object
-  def self.create(data, service_type = nil, dictionary_path = nil)
+  def self.create(data, service_type = nil, dictionary_path = nil, options = {})
+    # Получаем логгер из опций или создаем пустой логгер, пишущий в nil
+    logger = options[:logger] || Logger.new(nil)
+
     # Check for nil
     return nil if data.nil?
 
@@ -34,7 +40,7 @@ class ServiceFactory
         slug = UrlChecker.extract_name(url) if slug.nil?
       end
 
-      puts "url: #{slug} <- #{url}"
+      logger.debug "url: #{slug} <- #{url}"
     in String if !UrlChecker.url_like?(data) # slug
       slug = data
       dict_entry = dictionary.lookup(slug)
@@ -45,15 +51,15 @@ class ServiceFactory
       end
 
       url = dict_entry&.dig('url')
-      puts "slug: #{slug} -> #{url}"
+      logger.debug "slug: #{slug} -> #{url}"
     in { service: String => service_slug, url: String => service_url }
       slug = service_slug.to_s.capitalize
       url = service_url
       # Поиск в словаре после получения slug
       dict_entry = dictionary.lookup(slug)
-      puts "hash: #{slug} + #{url}"
+      logger.debug "hash: #{slug} + #{url}"
     in Hash
-      puts "hash: #{data}"
+      logger.debug "hash: #{data}"
 
       # Protection from nil values in key fields
       if (data.key?(:service) || data.key?("service")) &&
@@ -63,7 +69,7 @@ class ServiceFactory
 
       # 1. Check if hash contains only URL-like strings (list of services)
       if data.values.all? { |v| v.is_a?(String) && UrlChecker.url_like?(v) }
-        puts "hash with services: #{data.keys.join(', ')}"
+        logger.debug "hash with services: #{data.keys.join(', ')}"
         # Create array of child services
         children = []
         data.each do |key, url_value|
@@ -217,7 +223,7 @@ class ServiceFactory
         return Service.new(service: "Unknown", children: children)
       end
     in Array
-      puts "array: #{data}"
+      logger.debug "array: #{data}"
 
       # Create services from array elements
       children = data.map { |item| create(item, service_type, dictionary_path) }.compact
@@ -249,8 +255,8 @@ class ServiceFactory
       nil
     end
   rescue => e
-    puts "Error creating service: #{e.message}"
-    puts "Data: #{data.inspect}"
+    logger.error "Error creating service: #{e.message}"
+    logger.error "Data: #{data.inspect}"
     return nil
   end
 end

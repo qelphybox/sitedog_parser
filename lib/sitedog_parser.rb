@@ -22,10 +22,12 @@ module SitedogParser
     # @param symbolize_names [Boolean] whether to symbolize keys in the YAML file
     # @param simple_fields [Array<Symbol>] fields that should remain as simple strings without service wrapping
     # @param dictionary_path [String, nil] path to the dictionary file (optional)
+    # @param options [Hash] дополнительные опции
+    # @option options [Logger] :logger логгер для вывода сообщений
     # @return [Hash] hash containing parsed services by type and domain
-    def self.parse_file(file_path, symbolize_names: true, simple_fields: DEFAULT_SIMPLE_FIELDS, dictionary_path: nil)
+    def self.parse_file(file_path, symbolize_names: true, simple_fields: DEFAULT_SIMPLE_FIELDS, dictionary_path: nil, options: {})
       yaml = YAML.load_file(file_path, symbolize_names: symbolize_names)
-      parse(yaml, simple_fields: simple_fields, dictionary_path: dictionary_path)
+      parse(yaml, simple_fields: simple_fields, dictionary_path: dictionary_path, options: options)
     end
 
     # Parse YAML data and convert it to structured Ruby objects
@@ -33,9 +35,12 @@ module SitedogParser
     # @param yaml [Hash] YAML data as a hash
     # @param simple_fields [Array<Symbol>] fields that should remain as simple strings without service wrapping
     # @param dictionary_path [String, nil] path to the dictionary file (optional)
+    # @param options [Hash] дополнительные опции
+    # @option options [Logger] :logger логгер для вывода сообщений
     # @return [Hash] hash containing parsed services by type and domain
-    def self.parse(yaml, simple_fields: DEFAULT_SIMPLE_FIELDS, dictionary_path: nil)
+    def self.parse(yaml, simple_fields: DEFAULT_SIMPLE_FIELDS, dictionary_path: nil, options: {})
       result = {}
+      logger = options[:logger]
 
       yaml.each do |domain_name, items|
         services = {}
@@ -61,7 +66,7 @@ module SitedogParser
             end
           else
             # Для обычных полей создаем сервис
-            service = ServiceFactory.create(data, service_type, dictionary_path)
+            service = ServiceFactory.create(data, service_type, dictionary_path, options)
 
             if service
               services[service_type] ||= []
@@ -79,9 +84,11 @@ module SitedogParser
 
     # Преобразует YAML файл в хеш, где объекты Service преобразуются в хеши
     # @param file_path [String] путь к YAML файлу
+    # @param options [Hash] дополнительные опции
+    # @option options [Logger] :logger логгер для вывода сообщений
     # @return [Hash] хеш с сервисами
-    def self.to_hash(file_path)
-      data = parse_file(file_path)
+    def self.to_hash(file_path, options = {})
+      data = parse_file(file_path, options: options)
 
       # Преобразуем объекты Service в хеши
       result = {}
@@ -115,9 +122,11 @@ module SitedogParser
     # Преобразует данные из YAML файла в JSON формат
     #
     # @param file_path [String] путь к YAML файлу
+    # @param options [Hash] дополнительные опции
+    # @option options [Logger] :logger логгер для вывода сообщений
     # @return [String] форматированная JSON строка
-    def self.to_json(file_path)
-      JSON.pretty_generate(to_hash(file_path))
+    def self.to_json(file_path, options = {})
+      JSON.pretty_generate(to_hash(file_path, options))
     end
   end
 end

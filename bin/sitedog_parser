@@ -3,13 +3,21 @@
 require 'bundler/setup'
 require 'sitedog_parser'
 require 'optparse'
+require 'logger'
 
 # Задаем опции по умолчанию
 options = {
   debug: false,
   pretty: true,
-  output: nil
+  output: nil,
+  log_level: Logger::INFO
 }
+
+# Создаем логгер
+logger = Logger.new(STDOUT)
+logger.formatter = proc do |severity, datetime, progname, msg|
+  "#{msg}\n"
+end
 
 # Парсер опций командной строки
 option_parser = OptionParser.new do |opts|
@@ -17,10 +25,15 @@ option_parser = OptionParser.new do |opts|
 
   opts.on("-d", "--debug", "Enable debug output") do
     options[:debug] = true
+    options[:log_level] = Logger::DEBUG
   end
 
   opts.on("-c", "--compact", "Output compact JSON (without pretty formatting)") do
     options[:pretty] = false
+  end
+
+  opts.on("-q", "--quiet", "Suppress non-error messages") do
+    options[:log_level] = Logger::ERROR
   end
 
   opts.on("-h", "--help", "Show this help message") do
@@ -32,9 +45,12 @@ end
 # Парсим опции
 option_parser.parse!(ARGV)
 
+# Устанавливаем уровень логирования
+logger.level = options[:log_level]
+
 # Проверяем аргументы командной строки
 if ARGV.empty? || ARGV.size < 1 || ARGV.size > 2
-  puts option_parser.help
+  logger.error option_parser.help
   exit 1
 end
 
@@ -43,7 +59,7 @@ output_path = ARGV[1]
 
 # Проверяем существование входного файла
 unless File.exist?(file_path)
-  puts "Error: File '#{file_path}' not found."
+  logger.error "Error: File '#{file_path}' not found."
   exit 1
 end
 
@@ -54,22 +70,29 @@ unless options[:debug]
 end
 
 begin
+  logger.debug "Processing file: #{file_path}"
+
   # Преобразуем YAML в JSON
-  data = SitedogParser::Parser.to_hash(file_path)
+  data = SitedogParser::Parser.to_hash(file_path, { logger: logger })
+  logger.debug "Data converted to hash"
 
   # Преобразуем в JSON с учетом опции форматирования
   json_data = if options[:pretty]
+                logger.debug "Generating pretty JSON"
                 JSON.pretty_generate(data)
               else
+                logger.debug "Generating compact JSON"
                 JSON.generate(data)
               end
 
   # Если указан выходной файл, сохраняем результат в него
   if output_path
+    logger.debug "Saving to file: #{output_path}"
     File.write(output_path, json_data)
-    puts "JSON data successfully saved to '#{output_path}'."
+    logger.info "JSON data successfully saved to '#{output_path}'."
   else
     # Иначе выводим JSON на экран
+    # Используем puts напрямую для вывода JSON, чтобы не добавлять префиксы логгера
     puts json_data
   end
 
@@ -77,8 +100,8 @@ rescue => e
   # Восстанавливаем STDERR для вывода сообщений об ошибках
   $stderr.reopen(original_stderr) unless options[:debug]
 
-  puts "Error processing file: #{e.message}"
-  puts e.backtrace.join("\n") if options[:debug]
+  logger.error "Error processing file: #{e.message}"
+  logger.debug e.backtrace.join("\n") if options[:debug]
   exit 1
 ensure
   # Восстанавливаем STDERR

@@ -1,3 +1,4 @@
-inem/sitedog_parser
+inem/sitedog_parser:
   repo: https://github.com/inem/sitedog_parser
   gem: https://rubygems.org/gems/sitedog_parser
+  path: ~/Code/Clients/Self/sitedog_parser

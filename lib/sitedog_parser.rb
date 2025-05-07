@@ -1,6 +1,7 @@
 require "sitedog_parser/version"
 require 'yaml'
 require 'date'
+require 'json'
 
 require_relative "service"
 require_relative "dictionary"
@@ -76,47 +77,47 @@ module SitedogParser
       result
     end
 
-    # Get all services of a specific type from parsed data
-    #
-    # @param parsed_data [Hash] data returned by parse or parse_file
-    # @param service_type [Symbol] type of service to extract
-    # @return [Array] array of services of the specified type
-    def self.get_services_by_type(parsed_data, service_type)
-      result = []
+    # Преобразует YAML файл в хеш, где объекты Service преобразуются в хеши
+    # @param file_path [String] путь к YAML файлу
+    # @return [Hash] хеш с сервисами
+    def self.to_hash(file_path)
+      data = parse_file(file_path)
 
-      parsed_data.each do |_domain_name, services|
-        if services[service_type] && services[service_type].is_a?(Array)
-          result.concat(services[service_type])
+      # Преобразуем объекты Service в хеши
+      result = {}
+
+      data.each do |domain, services|
+        domain_key = domain.to_sym  # Преобразуем ключи доменов в символы
+        result[domain_key] = {}
+
+        services.each do |service_type, service_data|
+          service_type_key = service_type.to_sym  # Преобразуем ключи типов сервисов в символы
+
+          if service_data.is_a?(Array) && service_data.first.is_a?(Service)
+            # Преобразуем массив сервисов в массив хешей
+            result[domain_key][service_type_key] = service_data.map do |service|
+              {
+                'service' => service.service,
+                'url' => service.url,
+                'children' => service.children.map { |child| {'service' => child.service, 'url' => child.url} }
+              }
+            end
+          else
+            # Сохраняем простые поля как есть
+            result[domain_key][service_type_key] = service_data
+          end
         end
       end
 
       result
     end
 
-    # Get domain names from parsed data
+    # Преобразует данные из YAML файла в JSON формат
     #
-    # @param parsed_data [Hash] data returned by parse or parse_file
-    # @return [Array] array of domain names
-    def self.get_domain_names(parsed_data)
-      parsed_data.keys
-    end
-
-    # Get domains with a specific simple field value
-    #
-    # @param parsed_data [Hash] data returned by parse or parse_file
-    # @param field [Symbol] simple field to filter by
-    # @param value [String] value to match
-    # @return [Array] array of domain names that have the specified field value
-    def self.get_domains_by_field_value(parsed_data, field, value)
-      result = []
-
-      parsed_data.each do |domain_name, services|
-        if services[field] == value
-          result << domain_name
-        end
-      end
-
-      result
+    # @param file_path [String] путь к YAML файлу
+    # @return [String] форматированная JSON строка
+    def self.to_json(file_path)
+      JSON.pretty_generate(to_hash(file_path))
     end
   end
 end

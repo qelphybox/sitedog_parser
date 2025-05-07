@@ -3,3 +3,4 @@ require "sitedog_parser"
 
 require "pry"
 require "minitest/autorun"
+require "minitest/power_assert"

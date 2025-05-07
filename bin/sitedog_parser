@@ -1,0 +1,86 @@
+#!/usr/bin/env ruby
+
+require 'bundler/setup'
+require 'sitedog_parser'
+require 'optparse'
+
+# Задаем опции по умолчанию
+options = {
+  debug: false,
+  pretty: true,
+  output: nil
+}
+
+# Парсер опций командной строки
+option_parser = OptionParser.new do |opts|
+  opts.banner = "Usage: sitedog_parser [options] <path_to_yaml_file> [output_file]"
+
+  opts.on("-d", "--debug", "Enable debug output") do
+    options[:debug] = true
+  end
+
+  opts.on("-c", "--compact", "Output compact JSON (without pretty formatting)") do
+    options[:pretty] = false
+  end
+
+  opts.on("-h", "--help", "Show this help message") do
+    puts opts
+    exit
+  end
+end
+
+# Парсим опции
+option_parser.parse!(ARGV)
+
+# Проверяем аргументы командной строки
+if ARGV.empty? || ARGV.size < 1 || ARGV.size > 2
+  puts option_parser.help
+  exit 1
+end
+
+file_path = ARGV[0]
+output_path = ARGV[1]
+
+# Проверяем существование входного файла
+unless File.exist?(file_path)
+  puts "Error: File '#{file_path}' not found."
+  exit 1
+end
+
+# Перенаправляем STDERR, чтобы скрыть отладочный вывод если не в режиме debug
+unless options[:debug]
+  original_stderr = $stderr.dup
+  $stderr.reopen(File.open(File::NULL, 'w'))
+end
+
+begin
+  # Преобразуем YAML в JSON
+  data = SitedogParser::Parser.to_hash(file_path)
+
+  # Преобразуем в JSON с учетом опции форматирования
+  json_data = if options[:pretty]
+                JSON.pretty_generate(data)
+              else
+                JSON.generate(data)
+              end
+
+  # Если указан выходной файл, сохраняем результат в него
+  if output_path
+    File.write(output_path, json_data)
+    puts "JSON data successfully saved to '#{output_path}'."
+  else
+    # Иначе выводим JSON на экран
+    puts json_data
+  end
+
+rescue => e
+  # Восстанавливаем STDERR для вывода сообщений об ошибках
+  $stderr.reopen(original_stderr) unless options[:debug]
+
+  puts "Error processing file: #{e.message}"
+  puts e.backtrace.join("\n") if options[:debug]
+  exit 1
+ensure
+  # Восстанавливаем STDERR
+  $stderr.reopen(original_stderr) unless options[:debug]
+end

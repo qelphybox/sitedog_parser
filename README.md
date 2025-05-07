@@ -38,16 +38,6 @@ parsed_data = SitedogParser::Parser.parse_file('data.yml')
 yaml_data = YAML.load_file('data.yml', symbolize_names: true)
 parsed_data = SitedogParser::Parser.parse(yaml_data)
 
-# Get all services of a specific type across all domains
-all_hosting_services = SitedogParser::Parser.get_services_by_type(parsed_data, :hosting)
-all_hosting_services.each do |service|
-  puts "Hosting service: #{service.service}, URL: #{service.url}"
-end
-
-# Get all domain names
-domain_names = SitedogParser::Parser.get_domain_names(parsed_data)
-puts "Found domains: #{domain_names.join(', ')}"
-
 # Working with specific domain's services
 domain_services = parsed_data['example.com']
 if domain_services[:dns]
@@ -71,10 +61,51 @@ domain_services = parsed_data['example.com']
 if domain_services[:project]
   puts "Project: #{domain_services[:project]}"  # This is a string, not a Service object
 end
+```
 
-# Find domains with a specific field value
-domains_with_production = SitedogParser::Parser.get_domains_by_field_value(parsed_data, :environment, 'production')
-puts "Production domains: #{domains_with_production.join(', ')}"
+### Converting to JSON
+
+You can convert YAML data directly to JSON format:
+
+```ruby
+require 'sitedog_parser'
+
+# Convert a YAML file to JSON
+json_data = SitedogParser::Parser.to_json('services.yml')
+puts json_data
+
+# Save JSON to a file
+File.write('services.json', json_data)
+```
+
+The generated JSON will have the following structure:
+
+```json
+{
+  "example.com": {
+    "hosting": [
+      {
+        "service": "Amazon Web Services",
+        "url": "https://aws.amazon.com",
+        "children": []
+      }
+    ],
+    "dns": [
+      {
+        "service": "Cloudflare",
+        "url": "https://cloudflare.com",
+        "children": []
+      }
+    ],
+    "registrar": [
+      {
+        "service": "Namecheap",
+        "url": "https://namecheap.com",
+        "children": []
+      }
+    ]
+  }
+}
 ```
 
 ### Finding Dictionary Candidates
@@ -131,53 +162,28 @@ Processing this file:
 
 ```ruby
 require 'sitedog_parser'
+require 'pp'
 
 # Parse the file
-data = SitedogParser::Parser.parse_file('services.yml')
+data = SitedogParser::Parser.to_json('services.yml')
 
-# Get all domains
-puts "Domains: #{SitedogParser::Parser.get_domain_names(data).join(', ')}"
-
-# Get all hosting services
-hosting_services = SitedogParser::Parser.get_services_by_type(data, :hosting)
-puts "\nHosting services:"
-hosting_services.each do |service|
-  puts "- #{service.service}: #{service.url}"
-end
-
-# Get all DNS services
-dns_services = SitedogParser::Parser.get_services_by_type(data, :dns)
-puts "\nDNS services:"
-dns_services.each do |service|
-  puts "- #{service.service}: #{service.url}"
-end
-
-# Access a specific domain's services
-puts "\nServices for example.com:"
-example_services = data['example.com']
-example_services.each do |type, services|
-  puts "#{type}: #{services.first.service}"
-end
-```
-
-Output:
-```
-Domains: example.com, another-site.org
-
-Hosting services:
-- Amazon Web Services: https://aws.amazon.com
-- Digitalocean: https://digitalocean.com
-
-DNS services:
-- Cloudflare: https://cloudflare.com
-- Domains: https://domains.google.com
-
-Services for example.com:
-hosting: Amazon Web Services
-dns: Cloudflare
-registrar: Namecheap
-ssl: Letsencrypt
-repo: Github
+# Выводим структуру данных
+pp data
+# Структура данных будет примерно такой:
+{
+  "example.com": {
+    "hosting": [{"service": "Amazon Web Services", "url": "https://aws.amazon.com", "children": []}],
+    "dns": [{"service": "Cloudflare", "url": "https://cloudflare.com", "children": []}],
+    "registrar": [{"service": "Namecheap", "url": "https://namecheap.com", "children": []}],
+    "ssl": [{"service": "Letsencrypt", "url": null, "children": []}],
+    "repo": [{"service": "GitHub", "url": "https://github.com/example/repo", "children": []}]
+  },
+  "another-site.org": {
+    "hosting": [{"service": "Digitalocean", "url": "https://digitalocean.com", "children": []}],
+    "cdn": [{"service": "Amazon Web Services", "url": "https://cloudfront.aws.amazon.com", "children": []}],
+    "dns": [{"service": "Google Domains", "url": "https://domains.google.com", "children": []}]
+  }
+}
 ```
 
 ### Service Object Structure

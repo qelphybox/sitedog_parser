@@ -51,21 +51,6 @@ class MultipleSitesTest < Minitest::Test
     end
   end
 
-  def test_hosting_providers
-    # Проверяем, что хостинг-провайдеры правильно определены
-    hosting_services = SitedogParser::Parser.get_services_by_type(@parsed_data, :hosting)
-    providers = hosting_services.map(&:service).uniq.sort
-
-    assert_includes providers, 'Amazon S3'
-    assert_includes providers, 'Carrd'
-    assert_includes providers, 'Vercel'
-    assert_includes providers, 'Tumblr'
-    assert_includes providers, 'Replit'
-    assert_includes providers, 'Hetzner'
-    assert_includes providers, 'Amazon Web Services'
-    assert_includes providers, 'Medium'
-  end
-
   def test_rbbr_io_services
     # Проверяем конкретный домен
     domain_services = get_domain_services(@parsed_data, 'rbbr.io')
@@ -111,30 +96,6 @@ class MultipleSitesTest < Minitest::Test
     assert_instance_of String, domain_services[:environment]
   end
 
-  def test_get_domains_by_field_value
-    # Проверяем поиск доменов по значению простого поля
-
-    # Находим все домены с project: gitlabfan
-    gitlabfan_domains = SitedogParser::Parser.get_domains_by_field_value(@parsed_data, :project, 'gitlabfan')
-    assert_equal 3, gitlabfan_domains.size
-    gitlabfan_domains_as_strings = gitlabfan_domains.map(&:to_s)
-    assert_includes gitlabfan_domains_as_strings, 'gitlab-ci.site'
-    assert_includes gitlabfan_domains_as_strings, 'gitlab-ci.rocks'
-    assert_includes gitlabfan_domains_as_strings, 'gitlabfan.com'
-
-    # Находим все домены с role: landing
-    landing_domains = SitedogParser::Parser.get_domains_by_field_value(@parsed_data, :role, 'landing')
-    assert_equal 2, landing_domains.size
-    landing_domains_as_strings = landing_domains.map(&:to_s)
-    assert_includes landing_domains_as_strings, 'gitlab-ci.site'
-    assert_includes landing_domains_as_strings, 'gitlab-ci.rocks'
-
-    # Находим все домены с environment: production
-    prod_domains = SitedogParser::Parser.get_domains_by_field_value(@parsed_data, :environment, 'production')
-    assert_equal 1, prod_domains.size
-    assert_equal 'app.setyl.com', prod_domains.first.to_s
-  end
-
   def test_bought_at_value
     # Проверяем, что registrar для sitedock.my это Namecheap
     domain_services = get_domain_services(@parsed_data, 'sitedock.my')
@@ -151,21 +112,6 @@ class MultipleSitesTest < Minitest::Test
     assert_equal expected_date.hour, domain_services[:bought_at].hour
     assert_equal expected_date.min, domain_services[:bought_at].min
     assert_equal expected_date.sec, domain_services[:bought_at].sec
-  end
-
-  def test_service_counts
-    # Статистика по типам сервисов
-    service_stats = {}
-    [:hosting, :registrar, :dns, :mail, :managed_by].each do |type|
-      services = SitedogParser::Parser.get_services_by_type(@parsed_data, type)
-      service_stats[type] = services.size
-    end
-
-    assert_equal 14, service_stats[:hosting], "Expected 14 hosting services"
-    assert_equal 9, service_stats[:registrar], "Expected 9 registrar services"
-    assert_equal 4, service_stats[:dns], "Expected 4 DNS services"
-    assert_equal 5, service_stats[:mail], "Expected 5 mail services"
-    assert_equal 4, service_stats[:managed_by], "Expected 4 managed_by services"
   end
 
   # Вспомогательная функция для получения сервисов домена

@@ -75,42 +75,6 @@ class ParserTest < Minitest::Test
     assert_equal 'https://domains.google.com', another_services[:dns].first.url
   end
 
-  def test_get_services_by_type
-    result = SitedogParser::Parser.parse(@yaml_data)
-
-    # Get all hosting services
-    hosting_services = SitedogParser::Parser.get_services_by_type(result, :hosting)
-    assert_equal 2, hosting_services.size
-    assert_includes hosting_services.map(&:service), 'Amazon Web Services'
-    assert_includes hosting_services.map(&:service), 'Digitalocean'
-
-    # Get all DNS services
-    dns_services = SitedogParser::Parser.get_services_by_type(result, :dns)
-    assert_equal 2, dns_services.size
-    assert_includes dns_services.map(&:service), 'Cloudflare'
-    assert_includes dns_services.map(&:service), 'dns'
-
-    # Get service type that exists only in one domain
-    cdn_services = SitedogParser::Parser.get_services_by_type(result, :cdn)
-    assert_equal 1, cdn_services.size
-    assert_equal 'Amazon Web Services', cdn_services.first.service
-
-    # Try to get non-existent service type
-    nonexistent_services = SitedogParser::Parser.get_services_by_type(result, :nonexistent)
-    assert_empty nonexistent_services
-  end
-
-  def test_get_domain_names
-    result = SitedogParser::Parser.parse(@yaml_data)
-    domain_names = SitedogParser::Parser.get_domain_names(result)
-
-    assert_equal 2, domain_names.size
-    # Domain keys could be either symbols or strings, test both
-    domain_names_as_strings = domain_names.map(&:to_s)
-    assert_includes domain_names_as_strings, 'example.com'
-    assert_includes domain_names_as_strings, 'another-site.org'
-  end
-
   def test_parse_file
     # Create a temporary file with YAML content
     require 'tempfile'
@@ -151,5 +115,92 @@ class ParserTest < Minitest::Test
     # Domain keys could be symbols or strings
     domain_keys = result.keys.map(&:to_s)
     assert_includes domain_keys, 'rbbr.io'
+  end
+
+  def test_to_hash
+    # Create a temporary file with YAML content
+    require 'tempfile'
+    file = Tempfile.new(['test', '.yml'])
+    begin
+      file.write(@yaml_data.to_yaml)
+      file.close
+
+      # Convert to hash
+      hash_result = SitedogParser::Parser.to_hash(file.path)
+      expected_hash = {
+        'example.com' => {
+          'hosting' => [{'service' => 'Amazon Web Services', 'url' => 'https://aws.amazon.com', 'children' => []}],
+          'dns' => [{'service' => 'Cloudflare', 'url' => 'https://cloudflare.com', 'children' => []}],
+          'registrar' => [{'service' => 'Namecheap', 'url' => 'https://namecheap.com', 'children' => []}],
+          'ssl' => [{'service' => 'letsencrypt', 'url' => nil, 'children' => []}],
+          'repo' => [{'service' => 'GitHub', 'url' => 'https://github.com/example/repo', 'children' => []}]
+        },
+        'another-site.org' => {
+          'hosting' => [{'service' => 'Digitalocean', 'url' => 'https://digitalocean.com', 'children' => []}],
+          'cdn' => [{'service' => 'Amazon Web Services', 'url' => 'https://cloudfront.aws.amazon.com', 'children' => []}],
+          'dns' => [{'service' => 'dns', 'url' => 'https://domains.google.com', 'children' => []}]
+        }
+      }
+
+      # Наглядная проверка структуры хешей
+
+      # Отладочная информация - вывод всей структуры хешей
+      puts "\nОжидаемый хеш:\n#{expected_hash.inspect}\n\n"
+      puts "Полученный хеш:\n#{hash_result.inspect}\n\n"
+
+      # Проверим отдельно проблемный DNS сервис в another-site.org
+      another_site_dns = hash_result[:"another-site.org"][:dns].first
+      puts "Проблемный DNS сервис: #{another_site_dns.inspect}"
+
+      # 1. Проверяем домены
+      assert_equal expected_hash.keys.sort, hash_result.keys.map(&:to_s).sort,
+        "Несовпадение списка доменов: ожидалось #{expected_hash.keys}, получено #{hash_result.keys}"
+
+      # 2. Для каждого домена проверяем сервисы
+      expected_hash.each do |domain, exp_services|
+        actual_domain_key = hash_result.keys.find { |k| k.to_s == domain }
+        assert actual_domain_key, "Домен #{domain} отсутствует в результате"
+
+        actual_services = hash_result[actual_domain_key]
+        exp_service_types = exp_services.keys.sort
+        actual_service_types = actual_services.keys.map(&:to_s).sort
+
+        assert_equal exp_service_types, actual_service_types,
+          "Для домена #{domain}: несовпадение типов сервисов: ожидалось #{exp_service_types}, получено #{actual_service_types}"
+
+        # 3. Для каждого типа сервиса проверяем конкретные сервисы
+        exp_services.each do |service_type, exp_service_data|
+          actual_service_type = actual_services.keys.find { |k| k.to_s == service_type }
+          actual_service_data = actual_services[actual_service_type]
+
+          assert_equal exp_service_data.size, actual_service_data.size,
+            "Для #{domain}/#{service_type}: разное количество сервисов: ожидалось #{exp_service_data.size}, получено #{actual_service_data.size}"
+
+          # 4. Проверяем данные каждого сервиса
+          exp_service_data.each_with_index do |exp_service, i|
+            actual_service = actual_service_data[i]
+
+            # Преобразуем ключи к строкам для единообразия сравнения
+            actual_service_normalized = {}
+            actual_service.each do |k, v|
+              actual_service_normalized[k.to_s] = v
+            end
+
+            # Сравниваем атрибуты сервиса
+            ['service', 'url'].each do |attr|
+              assert_equal exp_service[attr], actual_service_normalized[attr],
+                "Для #{domain}/#{service_type}[#{i}]/#{attr}: ожидалось '#{exp_service[attr]}', получено '#{actual_service_normalized[attr]}'"
+            end
+
+            # Проверяем children
+            assert_equal exp_service['children'], actual_service_normalized['children'],
+              "Для #{domain}/#{service_type}[#{i}]/children: ожидалось #{exp_service['children']}, получено #{actual_service_normalized['children']}"
+          end
+        end
+      end
+
+    ensure
+      file.unlink
+    end
   end
 end

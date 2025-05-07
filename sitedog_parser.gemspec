@@ -26,7 +26,7 @@ Gem::Specification.new do |spec|
   ]
 
   spec.bindir        = "bin"
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  spec.executables   = ["sitedog_cli"]
   spec.require_paths = ["lib"]
 
   # Development dependencies

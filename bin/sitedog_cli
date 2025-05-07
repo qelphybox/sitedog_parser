@@ -102,7 +102,7 @@ def compact_json_generate(data)
   formatted_data.each_with_index do |(domain, services), domain_index|
     output << "  \"#{domain}\": {\n"
 
-    services.keys.sort.each_with_index do |service_type, service_index|
+    services.keys.each_with_index do |service_type, service_index|
       service_data = services[service_type]
 
       # Start line with service type

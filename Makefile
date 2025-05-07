@@ -18,7 +18,7 @@ console:
 analyze:
 	bin/analyze_dictionary test/fixtures/multiple.yaml
 
-publish:
+publish: build
 	bundle exec gem push `ls -t pkg/sitedog_parser-*.gem | head -1`
 
 push:

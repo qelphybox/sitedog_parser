@@ -28,7 +28,7 @@ module UrlChecker
     end
 
     # Check for standard URLs
-    pattern = /^((?:https?|ftp|sftp|ftps|ssh|git|ws|wss):\/\/)?[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,}(:[0-9]+)?(\/[-a-zA-Z0-9%_.~#+]*)*(\?[-a-zA-Z0-9%_&=.~#+]*)?(#[-a-zA-Z0-9%_&=.~#+\/]*)?$/
+    pattern = /^((?:https?|ftp|sftp|ftps|ssh|git|ws|wss):\/\/)?((?:[a-zA-Z0-9][-a-zA-Z0-9.]+\.[a-zA-Z]{2,})|(?:\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}))(:[0-9]+)?(\/[-a-zA-Z0-9%_.~#+]*)*(\?[-a-zA-Z0-9%_&=.~#+]*)?(#[-a-zA-Z0-9%_&=.~#+\/]*)?$/
 
     !!string.match(pattern)
   end
@@ -60,6 +60,11 @@ module UrlChecker
 
     # Remove protocol and www prefix if present
     domain = url.gsub(%r{^(?:https?://)?(?:www\.)?}, "")
+
+    # Check if it's an IP address
+    if domain.match?(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)
+      return "IP Address"
+    end
 
     # Extract domain from URL by removing everything after first / or : or ? or #
     domain = domain.split(/[:\/?#]/).first

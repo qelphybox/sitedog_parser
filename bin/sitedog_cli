@@ -4,6 +4,7 @@ require 'bundler/setup'
 require 'sitedog_parser'
 require 'optparse'
 require 'logger'
+require 'yaml'
 
 # Set default options
 options = {
@@ -132,9 +133,20 @@ end
 begin
   logger.debug "Processing file: #{file_path}"
 
-  # Convert YAML to JSON
+  # Load YAML to check raw data
+  raw_yaml = YAML.load_file(file_path)
+  puts "Raw YAML data for debug:"
+  puts raw_yaml.inspect
+  puts "\n"
+
+  # Convert YAML to hash
   data = SitedogParser::Parser.to_hash(file_path, { logger: logger })
   logger.debug "Data converted to hash"
+
+  # Debug the parsed data
+  puts "Parsed data structure:"
+  puts data.inspect
+  puts "\n"
 
   # Convert to JSON based on formatting options
   json_data = if options[:compact_children]

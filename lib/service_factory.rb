@@ -61,6 +61,10 @@ class ServiceFactory
     in Hash
       logger.debug "hash: #{data}"
 
+      # Check if all values are URL-like strings
+      all_url_like = data.values.all? { |v| v.is_a?(String) && UrlChecker.url_like?(v) }
+      logger.debug "All values are URL-like: #{all_url_like}, values: #{data.values.map { |v| "#{v.class}: #{v}" }.join(', ')}"
+
       # Protection from nil values in key fields
       if (data.key?(:service) || data.key?("service")) &&
          (data[:service].nil? || data["service"].nil?)
@@ -76,6 +80,8 @@ class ServiceFactory
           service_name = key.to_s
           # Первый приоритет - поиск в словаре по URL
           child_dict_entry = dictionary.match(url_value)
+
+          logger.debug "Child for #{key}: service_name=#{service_name}, url=#{url_value}, dict_entry=#{child_dict_entry}"
 
           if child_dict_entry && child_dict_entry['name']
             # Если нашли запись в словаре по URL, используем её имя вместо ключа
@@ -103,10 +109,14 @@ class ServiceFactory
 
         # Create parent service with child elements
         if service_type && children.any?
+          logger.debug "Returning service for #{service_type} with #{children.size} children"
           return Service.new(service: service_type.to_s, children: children)
         elsif children.size == 1
-          # If only one service and no service_type, return it directly
+          # If only one service and no service_type, return it
+          logger.debug "Returning single child service (no service_type)"
           return children.first
+        else
+          logger.debug "Not returning a service for #{data.inspect}, service_type=#{service_type}, children.size=#{children.size}"
         end
       end
 

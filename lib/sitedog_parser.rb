@@ -68,9 +68,16 @@ module SitedogParser
             # Для обычных полей создаем сервис
             service = ServiceFactory.create(data, service_type, dictionary_path, options)
 
+            # Debug output
+            if logger
+              logger.debug "ServiceFactory.create for #{service_type}: #{service.inspect}"
+            end
+
             if service
               services[service_type] ||= []
               services[service_type] << service
+            elsif logger
+              logger.debug "Service for #{service_type} is nil, field will be skipped"
             end
           end
         end

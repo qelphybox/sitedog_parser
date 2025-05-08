@@ -110,11 +110,49 @@ module SitedogParser
           if service_data.is_a?(Array) && service_data.first.is_a?(Service)
             # Преобразуем массив сервисов в массив хешей
             result[domain_key][service_type_key] = service_data.map do |service|
-              {
+              service_hash = {
                 'service' => service.service,
-                'url' => service.url,
-                'children' => service.children.map { |child| {'service' => child.service, 'url' => child.url} }
+                'url' => service.url
               }
+
+              # Добавляем image_url если он есть
+              if service.image_url
+                service_hash['image_url'] = service.image_url
+              end
+
+              # Добавляем children только если они есть
+              if service.children && !service.children.empty?
+                service_hash['children'] = service.children.map do |child|
+                  child_hash = {
+                    'service' => child.service,
+                    'url' => child.url
+                  }
+
+                  # Добавляем image_url для детей если он есть
+                  if child.image_url
+                    child_hash['image_url'] = child.image_url
+                  end
+
+                  # Добавляем properties для children если они есть
+                  if child.properties && !child.properties.empty?
+                    child_hash['properties'] = child.properties
+                  end
+
+                  # Добавляем value для children если оно есть
+                  if child.value
+                    child_hash['value'] = child.value
+                  end
+
+                  child_hash
+                end
+              end
+
+              # Добавляем properties, если они есть
+              if service.properties && !service.properties.empty?
+                service_hash['properties'] = service.properties
+              end
+
+              service_hash
             end
           else
             # Сохраняем простые поля как есть

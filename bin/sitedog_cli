@@ -135,18 +135,22 @@ begin
 
   # Load YAML to check raw data
   raw_yaml = YAML.load_file(file_path)
-  puts "Raw YAML data for debug:"
-  puts raw_yaml.inspect
-  puts "\n"
+  if options[:debug]
+    logger.debug "Raw YAML data for debug:"
+    logger.debug raw_yaml.inspect
+    logger.debug ""
+  end
 
   # Convert YAML to hash
   data = SitedogParser::Parser.to_hash(file_path, { logger: logger })
   logger.debug "Data converted to hash"
 
   # Debug the parsed data
-  puts "Parsed data structure:"
-  puts data.inspect
-  puts "\n"
+  if options[:debug]
+    logger.debug "Parsed data structure:"
+    logger.debug data.inspect
+    logger.debug ""
+  end
 
   # Convert to JSON based on formatting options
   json_data = if options[:compact_children]

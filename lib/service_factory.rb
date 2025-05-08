@@ -118,6 +118,37 @@ class ServiceFactory
         else
           logger.debug "Not returning a service for #{data.inspect}, service_type=#{service_type}, children.size=#{children.size}"
         end
+      # 1.5 Check if hash contains at least some URL-like strings
+      elsif data.values.any? { |v| v.is_a?(String) && UrlChecker.url_like?(v) }
+        logger.debug "hash with some URL-like values: #{data.inspect}"
+
+        # Debug: Check each value for URL-like
+        data.each do |k, v|
+          if v.is_a?(String)
+            logger.debug "  Checking #{k}: #{v} - URL-like? #{UrlChecker.url_like?(v)}"
+          else
+            logger.debug "  Skipping non-string #{k}: #{v.class}"
+          end
+        end
+
+        # Сохраняем все значения в properties, сохраняя порядок
+        properties = {}
+        data.each do |key, value|
+          properties[key.to_s] = value
+          logger.debug "Added property for #{key}: #{value}"
+        end
+
+        # Create service with properties only
+        if !properties.empty?
+          service = Service.new(
+            service: service_type.to_s,
+            url: nil,
+            properties: properties,
+            children: []  # Пустой массив children
+          )
+          logger.debug "Returning service with #{properties.size} properties"
+          return service
+        end
       end
 
       # 2. If hash contains service and url (possibly with additional fields)
@@ -235,19 +266,38 @@ class ServiceFactory
     in Array
       logger.debug "array: #{data}"
 
-      # Create services from array elements
-      children = data.map { |item| create(item, service_type, dictionary_path) }.compact
-
-      # If there are child services, create a parent service with them
-      if children.any? && service_type
-        return Service.new(service: service_type.to_s, children: children)
-      elsif children.size == 1
-        # If only one child service, return it
-        return children.first
+      # Create services from all array elements for children
+      children = []
+      data.each_with_index do |item, index|
+        # Для URL-подобных строк используем стандартный механизм
+        if item.is_a?(String) && UrlChecker.url_like?(item)
+          child_service = create(item, service_type, dictionary_path, options)
+          children << child_service if child_service
+        else
+          # Для простых значений создаем сервис с value
+          child_service = Service.new(
+            service: service_type ? service_type.to_s : "value",
+            url: nil,
+            properties: {},
+            value: item  # Используем поле value
+          )
+          children << child_service
+          logger.debug "Created service with value for item #{index}: #{item.inspect}"
+        end
       end
 
-      # If no child services or no name for parent service,
-      # return nil
+      # Return service with all items as children
+      if service_type
+        result = Service.new(
+          service: service_type.to_s,
+          url: nil,
+          children: children
+        )
+        logger.debug "Returning array service with #{children.size} children"
+        return result
+      end
+
+      # Fallback to nil if no service_type
       return nil
     else
       # Handle values that don't match any pattern

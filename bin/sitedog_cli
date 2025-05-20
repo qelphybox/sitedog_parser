@@ -5,7 +5,145 @@ require 'sitedog_parser'
 require 'optparse'
 require 'logger'
 require 'yaml'
+require 'json'
+require 'net/http'
+require 'uri'
+require 'fileutils'
 
+# Класс клиента для взаимодействия с SiteDog Cloud API
+class SiteDogClient
+  API_URL = 'http://localhost:3005/api/v1'
+  CONFIG_DIR = File.join(Dir.home, '.sitedog')
+  CONFIG_FILE = File.join(CONFIG_DIR, 'config.json')
+
+  def initialize
+    @config = load_config
+  end
+
+  def login(email, password)
+    uri = URI.parse("#{API_URL}/login")
+    params = { email: email, password: password }
+
+    response = Net::HTTP.post(uri, params.to_json, 'Content-Type' => 'application/json')
+
+    if response.code == '200'
+      result = JSON.parse(response.body)
+      if result['status'] == 'success'
+        @config['api_key'] = result['api_key']
+        save_config
+        puts "Авторизация успешна! API-ключ сохранен."
+        return true
+      else
+        puts "Ошибка: #{result['message']}"
+      end
+    else
+      puts "Ошибка: #{response.code} - #{response.message}"
+    end
+
+    false
+  end
+
+  def push_card(title, file_path)
+    unless authenticated?
+      puts "Ошибка: Сначала выполните вход (sitedog_cli login <email> <password>)"
+      return false
+    end
+
+    unless File.exist?(file_path)
+      puts "Ошибка: Файл не найден: #{file_path}"
+      return false
+    end
+
+    content = File.read(file_path)
+
+    # Проверяем, что содержимое является валидным YAML
+    begin
+      YAML.load(content)
+    rescue => e
+      puts "Ошибка: Недопустимый YAML-файл: #{e.message}"
+      return false
+    end
+
+    uri = URI.parse("#{API_URL}/cards")
+    params = { card: { title: title, content: content } }
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    request = Net::HTTP::Post.new(uri.request_uri)
+    request['Content-Type'] = 'application/json'
+    request['Authorization'] = "Bearer #{@config['api_key']}"
+    request.body = params.to_json
+
+    response = http.request(request)
+
+    if response.code == '201'
+      result = JSON.parse(response.body)
+      puts "Карточка успешно отправлена!"
+      puts "ID: #{result['data']['id']}"
+      puts "Заголовок: #{result['data']['title']}"
+      return true
+    else
+      puts "Ошибка: #{response.code} - #{response.message}"
+      puts response.body if response.body
+      return false
+    end
+  end
+
+  private
+
+  def authenticated?
+    @config && @config['api_key']
+  end
+
+  def load_config
+    return {} unless File.exist?(CONFIG_FILE)
+
+    begin
+      JSON.parse(File.read(CONFIG_FILE))
+    rescue
+      {}
+    end
+  end
+
+  def save_config
+    FileUtils.mkdir_p(CONFIG_DIR) unless Dir.exist?(CONFIG_DIR)
+    File.write(CONFIG_FILE, @config.to_json)
+  end
+end
+
+# Проверка, если первый аргумент - команда для API
+if ARGV.size > 0 && ['login', 'push'].include?(ARGV[0])
+  command = ARGV.shift
+
+  client = SiteDogClient.new
+
+  case command
+  when 'login'
+    if ARGV.size < 2
+      puts "Ошибка: Требуется email и пароль"
+      puts "Использование: sitedog_cli login <email> <password>"
+      exit 1
+    end
+
+    email = ARGV[0]
+    password = ARGV[1]
+    exit(client.login(email, password) ? 0 : 1)
+
+  when 'push'
+    if ARGV.size < 2
+      puts "Ошибка: Требуется заголовок и путь к файлу"
+      puts "Использование: sitedog_cli push <title> <file_path>"
+      exit 1
+    end
+
+    title = ARGV[0]
+    file_path = ARGV[1]
+    exit(client.push_card(title, file_path) ? 0 : 1)
+  end
+
+  exit 0
+end
+
+# Для стандартной функциональности парсинга YAML -> JSON
 # Set default options
 options = {
   debug: false,
@@ -24,6 +162,12 @@ end
 # Command line options parser
 option_parser = OptionParser.new do |opts|
   opts.banner = "Usage: sitedog_cli [options] <path_to_yaml_file> [output_file]"
+  opts.separator ""
+  opts.separator "Commands:"
+  opts.separator "  login <email> <password> - войти в систему и получить API-ключ"
+  opts.separator "  push <title> <file_path> - отправить YAML-файл как карточку"
+  opts.separator ""
+  opts.separator "Options:"
 
   opts.on("-d", "--debug", "Enable debug output") do
     options[:debug] = true

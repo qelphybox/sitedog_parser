@@ -16,8 +16,11 @@ class SiteDogClient
   CONFIG_DIR = File.join(Dir.home, '.sitedog')
   CONFIG_FILE = File.join(CONFIG_DIR, 'config.json')
 
-  def initialize
+  attr_accessor :test_mode
+
+  def initialize(test_mode = false)
     @config = load_config
+    @test_mode = test_mode
   end
 
   def login(email, password)
@@ -43,11 +46,14 @@ class SiteDogClient
     false
   end
 
-  def push_card(title, file_path)
+  def push_card(file_path, title = nil)
     unless authenticated?
       puts "Ошибка: Сначала выполните вход (sitedog_cli login <email> <password>)"
       return false
     end
+
+    # Используем имя файла как заголовок, если заголовок не указан
+    title = File.basename(file_path) if title.nil? || title.empty?
 
     unless File.exist?(file_path)
       puts "Ошибка: Файл не найден: #{file_path}"
@@ -58,10 +64,22 @@ class SiteDogClient
 
     # Проверяем, что содержимое является валидным YAML
     begin
-      YAML.load(content)
+      yaml_content = YAML.load(content)
     rescue => e
       puts "Ошибка: Недопустимый YAML-файл: #{e.message}"
       return false
+    end
+
+    # В тестовом режиме просто показываем информацию
+    if @test_mode
+      puts "=== ТЕСТОВЫЙ РЕЖИМ ==="
+      puts "Отправка данных на API..."
+      puts "Заголовок: #{title}"
+      puts "Файл: #{file_path}"
+      puts "Содержимое (сокращено):"
+      puts "  #{yaml_content.keys.join(", ")}"
+      puts "=== УСПЕШНО ==="
+      return true
     end
 
     uri = URI.parse("#{API_URL}/cards")
@@ -91,6 +109,10 @@ class SiteDogClient
   private
 
   def authenticated?
+    # В тестовом режиме всегда считаем, что аутентификация пройдена
+    return true if @test_mode
+
+    # Проверяем наличие API-ключа
     @config && @config['api_key']
   end
 
@@ -114,10 +136,10 @@ end
 if ARGV.size > 0 && ['login', 'push'].include?(ARGV[0])
   command = ARGV.shift
 
-  client = SiteDogClient.new
+  # Создаем клиент только для login, для push будет создан позже с test_mode
+  if command == 'login'
+    client = SiteDogClient.new
 
-  case command
-  when 'login'
     if ARGV.size < 2
       puts "Ошибка: Требуется email и пароль"
       puts "Использование: sitedog_cli login <email> <password>"
@@ -127,17 +149,35 @@ if ARGV.size > 0 && ['login', 'push'].include?(ARGV[0])
     email = ARGV[0]
     password = ARGV[1]
     exit(client.login(email, password) ? 0 : 1)
+  elsif command == 'push'
+    # По умолчанию ищем .sitedog в текущей директории
+    default_file = '.sitedog'
 
-  when 'push'
-    if ARGV.size < 2
-      puts "Ошибка: Требуется заголовок и путь к файлу"
-      puts "Использование: sitedog_cli push <title> <file_path>"
-      exit 1
+    # Проверяем опции для тестового режима
+    test_mode = false
+    if ARGV.include?('--test')
+      test_mode = true
+      ARGV.delete('--test')
     end
 
-    title = ARGV[0]
-    file_path = ARGV[1]
-    exit(client.push_card(title, file_path) ? 0 : 1)
+    if ARGV.empty?
+      # Если аргументы отсутствуют, используем файл по умолчанию
+      if File.exist?(default_file)
+        file_path = default_file
+        title = File.basename(Dir.pwd)  # Используем имя текущей директории как заголовок
+      else
+        puts "Ошибка: Файл #{default_file} не найден в текущей директории."
+        puts "Использование: sitedog_cli push [file_path] [--test]"
+        exit 1
+      end
+    else
+      # Первый аргумент - путь к файлу
+      file_path = ARGV[0]
+      title = File.basename(file_path)  # Используем имя файла как заголовок по умолчанию
+    end
+
+    client = SiteDogClient.new(test_mode)
+    exit(client.push_card(file_path, title) ? 0 : 1)
   end
 
   exit 0
@@ -165,7 +205,8 @@ option_parser = OptionParser.new do |opts|
   opts.separator ""
   opts.separator "Commands:"
   opts.separator "  login <email> <password> - войти в систему и получить API-ключ"
-  opts.separator "  push <title> <file_path> - отправить YAML-файл как карточку"
+  opts.separator "  push [file_path] - отправить YAML-файл как карточку (по умолчанию использует .sitedog)"
+  opts.separator "    --test - запустить в тестовом режиме без отправки данных на сервер"
   opts.separator ""
   opts.separator "Options:"
 
